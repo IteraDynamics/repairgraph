@@ -1,0 +1,15 @@
+{
+  "title": "RepairGraph Vehicle Structure",
+  "type": "object",
+  "required": ["oem", "year", "model", "domain"],
+  "properties": {
+    "oem": {"type": "string"},
+    "year": {"type": "integer"},
+    "model": {"type": "string"},
+    "domain": {"type": "string"},
+    "materials": {"type": "array"},
+    "structure_nodes": {"type": "array", "items": {"type": "string"}},
+    "notes": {"type": "array", "items": {"type": "string"}},
+    "source": {"type": "object"}
+  }
+}
