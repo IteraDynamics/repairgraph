@@ -1,5 +1,7 @@
 import re
 
+from repairgraph.taxonomy.aliases import resolve_alias
+
 
 OPERATION_NODE_ID = "repair_operation"
 
@@ -8,7 +10,9 @@ def canonical_id(value: str) -> str:
     cleaned = value.strip().lower()
     cleaned = re.sub(r"[^a-z0-9]+", "_", cleaned)
     cleaned = re.sub(r"_+", "_", cleaned)
-    return cleaned.strip("_")
+    cleaned = cleaned.strip("_")
+
+    return resolve_alias(cleaned)
 
 
 def add_node(nodes_by_id: dict, node_id: str, node_type: str, label: str | None = None):
@@ -48,12 +52,15 @@ def build_graph(draft: dict) -> dict:
         target = dependency["target"]
         target_id = canonical_id(target)
 
-        add_node(
-            nodes_by_id,
-            target_id,
-            "dependency_target",
-            target.replace("_", " "),
-        )
+        existing_node = nodes_by_id.get(target_id)
+
+        if existing_node is None:
+            add_node(
+                nodes_by_id,
+                target_id,
+                "dependency_target",
+                target.replace("_", " "),
+            )
 
         edges.append(
             {
