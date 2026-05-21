@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 [project.scripts]
 repairgraph-export-draft = "repairgraph.extract.export_draft_json:main"
 repairgraph-export-graph = "repairgraph.graph.export_graph_json:main"
+repairgraph-export-mermaid = "repairgraph.graph.export_mermaid:main"
 repairgraph-validate = "repairgraph.validate:main"
 
 [tool.pytest.ini_options]
