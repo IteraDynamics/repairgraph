@@ -20,7 +20,7 @@ def export_draft(text: str, output_name: str):
     return output_path
 
 
-if __name__ == "__main__":
+def main():
     sample_text_path = Path("tests/fixtures/honda_crv_quarter_sample.txt")
 
     text = sample_text_path.read_text(encoding="utf-8")
@@ -28,3 +28,7 @@ if __name__ == "__main__":
     output_path = export_draft(text, "honda_crv_quarter_draft")
 
     print(f"Draft exported to: {output_path}")
+
+
+if __name__ == "__main__":
+    main()
