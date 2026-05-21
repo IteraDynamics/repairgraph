@@ -1,0 +1,53 @@
+{
+  "oem": "Honda",
+  "year": 2025,
+  "model": "CR-V",
+  "domain": "roof_and_side_panel_construction",
+  "materials": [
+    {
+      "component": "roof_panel",
+      "thickness_mm": 0.75,
+      "tensile_strength_mpa": 340,
+      "zinc_plated": true,
+      "classification": "HSS"
+    },
+    {
+      "component": "roof_arch_a",
+      "thickness_mm": 2.0,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_roof_rail_upper",
+      "thickness_mm": 1.2,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_roof_rail_lower",
+      "thickness_mm": 1.0,
+      "tensile_strength_mpa": 440,
+      "classification": "HSS"
+    }
+  ],
+  "structure_nodes": [
+    "rear_side_outer_panel",
+    "rear_pillar_lower_gutter",
+    "rear_pillar_separator",
+    "rear_pillar_stiffener",
+    "quarter_pillar_stiffener",
+    "rear_wheel_arch_separator",
+    "rear_inner_panel",
+    "rear_combination_adapter_lower",
+    "side_sill_extension_end_flange"
+  ],
+  "notes": [
+    "Honda defines 340-780 MPa tensile steel as HSS.",
+    "Honda defines 980 MPa and higher tensile steel as UHSS.",
+    "Construction diagrams contain machine-usable material semantics."
+  ],
+  "source": {
+    "document": "2025 Honda CR-V Roof and Side Panel Construction",
+    "operation_reference": "Rear Side Outer Panel Replacement"
+  }
+}
