@@ -25,7 +25,7 @@ def export_graph(draft_path: Path, output_name: str):
     return output_path
 
 
-if __name__ == "__main__":
+def main():
     draft_path = EXTRACTED_DIR / "honda_crv_quarter_draft.json"
 
     output_path = export_graph(
@@ -34,3 +34,7 @@ if __name__ == "__main__":
     )
 
     print(f"Graph exported to: {output_path}")
+
+
+if __name__ == "__main__":
+    main()
