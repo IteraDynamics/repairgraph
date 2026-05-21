@@ -1,0 +1,11 @@
+{
+  "title": "RepairGraph OEM Standard",
+  "type": "object",
+  "required": ["oem"],
+  "properties": {
+    "oem": {"type": "string"},
+    "joining_methods": {"type": "array"},
+    "requirements": {"type": "array"},
+    "source": {"type": "object"}
+  }
+}
