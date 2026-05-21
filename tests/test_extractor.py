@@ -56,3 +56,17 @@ def test_build_draft_object():
     assert "structure_nodes" in draft
     assert "joining_methods" in draft
     assert "dependency_phrases" in draft
+    assert "typed_dependencies" in draft
+
+
+def test_typed_dependencies_filter_pronouns():
+    text = load_fixture()
+
+    draft = build_draft_object(text)
+
+    targets = [
+        dependency["target"]
+        for dependency in draft["typed_dependencies"]
+    ]
+
+    assert "them" not in targets
