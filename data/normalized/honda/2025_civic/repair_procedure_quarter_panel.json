@@ -1,0 +1,66 @@
+{
+  "oem": "Honda",
+  "year": 2025,
+  "model": "Civic",
+  "operation": "rear_side_outer_panel_replacement",
+  "operation_family": "quarter_panel",
+  "joining_methods": [
+    "spot_weld",
+    "adhesive_bonding",
+    "hemming"
+  ],
+  "sectioning_locations": [
+    {
+      "zone": "front_upper_edge",
+      "description": "Front upper edge position of rear side outer panel repair part"
+    }
+  ],
+  "dependencies": [
+    {
+      "type": "inspect_if_damaged",
+      "target": "rear_pillar_gutter"
+    },
+    {
+      "type": "replace_component",
+      "target": "rear_combination_adapter"
+    },
+    {
+      "type": "replace_component",
+      "target": "wheel_arch_separator"
+    },
+    {
+      "type": "replace_component",
+      "target": "rear_pillar_separator"
+    }
+  ],
+  "corrosion_requirements": [
+    "sealer_application_required",
+    "adhesive_application_required",
+    "urethane_foam_replacement_required"
+  ],
+  "repair_notes": [
+    "Confirm sheet thickness, tensile strength, and zinc treatment before welding.",
+    "Select cutting positions in consideration of replacement procedure.",
+    "Check body dimensions before final welding."
+  ],
+  "spatial_relationships": [
+    {
+      "source": "rear_side_outer_panel",
+      "relationship": "adjacent_to",
+      "target": "rear_pillar_gutter"
+    },
+    {
+      "source": "rear_side_outer_panel",
+      "relationship": "adjacent_to",
+      "target": "rear_inner_panel"
+    },
+    {
+      "source": "rear_side_outer_panel",
+      "relationship": "joined_to",
+      "target": "wheel_arch_separator"
+    }
+  ],
+  "source": {
+    "document": "2025 Honda Civic Rear Side Outer Panel Replacement"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "oem": "Honda",
+  "year": 2025,
+  "model": "Odyssey",
+  "domain": "roof_and_side_panel_construction",
+  "materials": [
+    {
+      "component": "roof_panel",
+      "thickness_mm": 0.75,
+      "tensile_strength_mpa": 340,
+      "zinc_plated": true,
+      "classification": "HSS"
+    },
+    {
+      "component": "d_pillar_inner",
+      "thickness_mm": 1.4,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_side_rail",
+      "thickness_mm": 1.2,
+      "tensile_strength_mpa": 440,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_side_stiffener",
+      "thickness_mm": 1.6,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    }
+  ],
+  "structure_nodes": [
+    "rear_side_outer_panel",
+    "d_pillar_inner_reinforcement",
+    "d_pillar_gutter",
+    "rear_side_stiffener",
+    "wheel_arch_separator",
+    "rear_quarter_separator",
+    "rear_inner_panel",
+    "side_step_lower_panel"
+  ],
+  "notes": [
+    "Honda defines 340-780 MPa tensile steel as HSS.",
+    "Honda defines 980 MPa and higher tensile steel as UHSS.",
+    "Odyssey D-pillar area requires special attention to sliding door track alignment."
+  ],
+  "source": {
+    "document": "2025 Honda Odyssey Roof and Side Panel Construction",
+    "operation_reference": "Outer Panel Rear Side Area Replacement"
+  }
+}

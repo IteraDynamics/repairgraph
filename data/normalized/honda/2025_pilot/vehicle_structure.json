@@ -1,0 +1,59 @@
+{
+  "oem": "Honda",
+  "year": 2025,
+  "model": "Pilot",
+  "domain": "roof_and_side_panel_construction",
+  "materials": [
+    {
+      "component": "roof_panel",
+      "thickness_mm": 0.75,
+      "tensile_strength_mpa": 340,
+      "zinc_plated": true,
+      "classification": "HSS"
+    },
+    {
+      "component": "roof_arch_a",
+      "thickness_mm": 2.3,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_roof_rail_upper",
+      "thickness_mm": 1.4,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_roof_rail_lower",
+      "thickness_mm": 1.2,
+      "tensile_strength_mpa": 440,
+      "classification": "HSS"
+    },
+    {
+      "component": "roof_middle_rail",
+      "thickness_mm": 1.0,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    }
+  ],
+  "structure_nodes": [
+    "rear_side_outer_panel",
+    "rear_combination_stiffener",
+    "rear_pillar_gutter",
+    "roof_side_rail_stiffener",
+    "wheel_arch_lower_extension",
+    "inner_quarter_pillar",
+    "outside_stiffener_ring",
+    "rear_inner_panel",
+    "side_sill_extension_end_flange"
+  ],
+  "notes": [
+    "Honda defines 340-780 MPa tensile steel as HSS.",
+    "Honda defines 980 MPa and higher tensile steel as UHSS.",
+    "Pilot construction diagram includes roof middle rail and rear roof rail stiffener."
+  ],
+  "source": {
+    "document": "2025 Honda Pilot Roof and Side Panel Construction",
+    "operation_reference": "Outer Panel Rear Side Area Replacement"
+  }
+}
