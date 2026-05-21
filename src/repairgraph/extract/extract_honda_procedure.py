@@ -3,6 +3,7 @@ import re
 
 from repairgraph.taxonomy.structure_nodes import STRUCTURE_NODE_CLASSES
 from repairgraph.taxonomy.joining_methods import JOINING_METHODS
+from repairgraph.extract.dependencies import extract_typed_dependencies
 
 
 DEPENDENCY_PATTERNS = [
@@ -66,6 +67,7 @@ def build_draft_object(text: str) -> dict:
         "structure_nodes": extract_structure_nodes(text),
         "joining_methods": extract_joining_methods(text),
         "dependency_phrases": extract_dependency_phrases(text),
+        "typed_dependencies": extract_typed_dependencies(text),
     }
 
 
