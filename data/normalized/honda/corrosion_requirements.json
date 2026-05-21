@@ -1,0 +1,53 @@
+{
+  "oem": "Honda",
+  "taxonomy": "corrosion_requirements",
+  "requirements": [
+    {
+      "name": "body_sealer",
+      "category": "sealing",
+      "purpose": [
+        "prevent_water_entry",
+        "prevent_dust_entry",
+        "prevent_rust"
+      ],
+      "application_notes": [
+        "Apply sealer at body panel joints.",
+        "Refer to model-specific body repair manual for application locations.",
+        "Clean and degrease sealer application area before application.",
+        "Remove excess weld-through primer using reducer.",
+        "Apply primer surfacer before sealer."
+      ]
+    },
+    {
+      "name": "undercoating",
+      "category": "underbody_protection",
+      "purpose": [
+        "prevent_chipping_damage",
+        "protect_underbody_surfaces",
+        "protect_wheelhouse_surfaces"
+      ],
+      "application_notes": [
+        "Apply undercoat over underbody and wheelhouse surfaces.",
+        "Clean and degrease undercoating areas before application.",
+        "Apply primer surfacer before undercoat.",
+        "Mask suspension, drivetrain, exhaust, and part installation areas where necessary.",
+        "Use spray equipment designed for undercoat."
+      ]
+    },
+    {
+      "name": "urethane_foam_repair",
+      "category": "foam_replacement",
+      "purpose": [
+        "reduce_road_noise_transmission",
+        "restore_body_acoustic_separator_function"
+      ],
+      "application_notes": [
+        "Replace removed expandable urethane foam through holes on inner body panels as directed in the model-specific body repair manual.",
+        "Required where expandable urethane foam was used instead of traditional acoustic separators."
+      ]
+    }
+  ],
+  "source": {
+    "document": "Honda Repairing Major Body Damage - Anti-Rust Treatment Before Painting"
+  }
+}
