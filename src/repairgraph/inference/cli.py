@@ -10,6 +10,7 @@ from repairgraph.inference.repair_complexity import score_repair_complexity
 from repairgraph.inference.material_risk import surface_material_risks
 from repairgraph.inference.supplement_candidates import infer_supplement_candidates
 from repairgraph.inference.motifs import find_corpus_motifs
+from repairgraph.inference.missing_operations import detect_missing_operations
 
 
 def _section(title: str, content):
@@ -35,6 +36,10 @@ def run_single(oem: str, year: int, model: str):
         _section("Material Risks", surface_material_risks(procedure, structure))
 
     _section("Supplement Candidates", infer_supplement_candidates(procedure, structure))
+
+    all_procedures = load_all_procedures()
+    corpus_without_self = [p for p in all_procedures if p.get("model") != procedure.get("model")]
+    _section("Likely Missing Operations", detect_missing_operations(procedure, corpus_without_self))
 
 
 def run_corpus():
