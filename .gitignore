@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+.DS_Store
+
+# Local-only source documents
+data/raw/**/*.pdf
+data/raw/**/*.png
+data/raw/**/*.jpg
+data/raw/**/*.jpeg
