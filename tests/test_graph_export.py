@@ -68,3 +68,16 @@ def test_graph_uses_canonical_node_ids():
 
     assert "rear_pillar_separator" in node_ids
     assert "rear pillar separator" not in node_ids
+
+
+def test_alias_resolution_prevents_duplicate_separator_nodes():
+    text = load_fixture()
+
+    draft = build_draft_object(text)
+
+    graph = build_graph(draft)
+
+    node_ids = [node["id"] for node in graph["nodes"]]
+
+    assert "wheel_arch_separator" in node_ids
+    assert "rear_wheel_arch_separator" not in node_ids
