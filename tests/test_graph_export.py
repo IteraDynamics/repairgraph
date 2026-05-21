@@ -81,3 +81,18 @@ def test_alias_resolution_prevents_duplicate_separator_nodes():
 
     assert "wheel_arch_separator" in node_ids
     assert "rear_wheel_arch_separator" not in node_ids
+
+
+def test_graph_contains_joining_method_relationships():
+    text = load_fixture()
+
+    draft = build_draft_object(text)
+
+    graph = build_graph(draft)
+
+    relationships = [
+        edge["relationship"]
+        for edge in graph["edges"]
+    ]
+
+    assert "uses_joining_method" in relationships
