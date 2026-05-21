@@ -11,6 +11,7 @@ repairgraph-export-mermaid = "repairgraph.graph.export_mermaid:main"
 repairgraph-validate = "repairgraph.validate:main"
 repairgraph-query = "repairgraph.query.cli:main"
 repairgraph-export-normalized-graph = "repairgraph.graph.export_normalized_graph:main"
+repairgraph-infer = "repairgraph.inference.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
