@@ -1,0 +1,9 @@
+[project]
+name = "repairgraph"
+version = "0.1.0"
+description = "AI-native procedural intelligence engine for collision repair"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
