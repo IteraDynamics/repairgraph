@@ -9,6 +9,9 @@ FIXTURE_PATH = Path(
 )
 
 
+OPERATION_NODE_ID = "repair_operation"
+
+
 def load_fixture() -> str:
     return FIXTURE_PATH.read_text(encoding="utf-8")
 
@@ -40,3 +43,28 @@ def test_graph_contains_replace_component_edge():
     ]
 
     assert "replace_component" in relationships
+
+
+def test_graph_contains_operation_node():
+    text = load_fixture()
+
+    draft = build_draft_object(text)
+
+    graph = build_graph(draft)
+
+    node_ids = [node["id"] for node in graph["nodes"]]
+
+    assert OPERATION_NODE_ID in node_ids
+
+
+def test_graph_uses_canonical_node_ids():
+    text = load_fixture()
+
+    draft = build_draft_object(text)
+
+    graph = build_graph(draft)
+
+    node_ids = [node["id"] for node in graph["nodes"]]
+
+    assert "rear_pillar_separator" in node_ids
+    assert "rear pillar separator" not in node_ids
