@@ -24,17 +24,25 @@ def load_all_vehicle_structures() -> list[dict]:
     return structures
 
 
+def _model_slugs(model: str) -> list[str]:
+    base = model.lower()
+    slugs = []
+    slugs.append(base.replace("-", "_").replace(" ", "_"))
+    slugs.append(base.replace("-", "").replace(" ", "_"))
+    return slugs
+
+
 def load_procedure(oem: str, year: int, model: str) -> dict | None:
-    model_slug = model.lower().replace("-", "_").replace(" ", "_")
-    path = NORMALIZED_DIR / oem.lower() / f"{year}_{model_slug}" / "repair_procedure_quarter_panel.json"
-    if path.exists():
-        return load_json(path)
+    for model_slug in _model_slugs(model):
+        path = NORMALIZED_DIR / oem.lower() / f"{year}_{model_slug}" / "repair_procedure_quarter_panel.json"
+        if path.exists():
+            return load_json(path)
     return None
 
 
 def load_vehicle_structure(oem: str, year: int, model: str) -> dict | None:
-    model_slug = model.lower().replace("-", "_").replace(" ", "_")
-    path = NORMALIZED_DIR / oem.lower() / f"{year}_{model_slug}" / "vehicle_structure.json"
-    if path.exists():
-        return load_json(path)
+    for model_slug in _model_slugs(model):
+        path = NORMALIZED_DIR / oem.lower() / f"{year}_{model_slug}" / "vehicle_structure.json"
+        if path.exists():
+            return load_json(path)
     return None
