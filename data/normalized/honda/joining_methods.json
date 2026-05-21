@@ -1,0 +1,43 @@
+{
+  "oem": "Honda",
+  "joining_methods": [
+    {
+      "name": "2_plate_spot_weld",
+      "category": "spot_weld",
+      "description": "2-plate spot welding"
+    },
+    {
+      "name": "3_plate_spot_weld",
+      "category": "spot_weld",
+      "description": "3-plate spot welding"
+    },
+    {
+      "name": "4_plate_spot_weld",
+      "category": "spot_weld",
+      "description": "4-plate spot welding"
+    },
+    {
+      "name": "mag_plug_weld",
+      "category": "mag_welding",
+      "description": "MAG plug welding"
+    },
+    {
+      "name": "mag_butt_or_fillet_weld",
+      "category": "mag_welding",
+      "description": "MAG welding (butt or fillet)"
+    },
+    {
+      "name": "double_hole_mig_brazing",
+      "category": "mig_brazing",
+      "description": "Double Hole MIG brazing (1500 MPa to HSS/UHSS)"
+    },
+    {
+      "name": "single_hole_mig_brazing",
+      "category": "mig_brazing",
+      "description": "Single Hole MIG brazing (270 MPa to 1500 MPa)"
+    }
+  ],
+  "source": {
+    "document": "Honda Symbols Definition"
+  }
+}
