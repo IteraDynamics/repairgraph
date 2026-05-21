@@ -1,0 +1,56 @@
+{
+  "oem": "Honda",
+  "year": 2025,
+  "model": "Pilot",
+  "operation": "outer_panel_rear_side_area_replacement",
+  "operation_family": "quarter_panel",
+  "joining_methods": [
+    "spot_weld",
+    "adhesive_bonding",
+    "urethane_foam_retention"
+  ],
+  "structure_nodes": [
+    "rear_combination_stiffener",
+    "rear_pillar_gutter",
+    "roof_side_rail_stiffener",
+    "wheel_arch_lower_extension",
+    "inner_quarter_pillar",
+    "outside_stiffener_ring"
+  ],
+  "dependencies": [
+    {
+      "type": "inspect_if_damaged",
+      "target": "rear_combination_stiffener"
+    },
+    {
+      "type": "replace_if_sectioned",
+      "target": "rear_pillar_gutter_middle"
+    },
+    {
+      "type": "replace_if_sectioned",
+      "target": "rear_pillar_gutter_lower"
+    }
+  ],
+  "materials": [
+    {
+      "component": "roof_middle_rail",
+      "tensile_strength_mpa": 590
+    },
+    {
+      "component": "rear_roof_rail_stiffener",
+      "tensile_strength_mpa": 590
+    }
+  ],
+  "corrosion_requirements": [
+    "sealer_application_required",
+    "urethane_foam_management_required"
+  ],
+  "repair_notes": [
+    "Select sectioning locations in consideration of replacement procedure.",
+    "Check rear pillar gutter complete position for damage.",
+    "Check rear combination stiffener complete position for damage."
+  ],
+  "source": {
+    "document": "2025 Honda Pilot Outer Panel Rear Side Area Replacement"
+  }
+}
