@@ -11,6 +11,8 @@ from repairgraph.inference.material_risk import surface_material_risks
 from repairgraph.inference.supplement_candidates import infer_supplement_candidates
 from repairgraph.inference.motifs import find_corpus_motifs
 from repairgraph.inference.missing_operations import detect_missing_operations
+from repairgraph.inference.sequencing import build_operation_sequence
+from repairgraph.inference.qa_checklist import generate_qa_checklist
 
 
 def _section(title: str, content):
@@ -40,6 +42,8 @@ def run_single(oem: str, year: int, model: str):
     all_procedures = load_all_procedures()
     corpus_without_self = [p for p in all_procedures if p.get("model") != procedure.get("model")]
     _section("Likely Missing Operations", detect_missing_operations(procedure, corpus_without_self))
+    _section("Operation Sequence", build_operation_sequence(procedure))
+    _section("QA Checklist", generate_qa_checklist(procedure, structure, corpus_without_self))
 
 
 def run_corpus():

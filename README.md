@@ -54,7 +54,7 @@ data/normalized/honda/
 
 schemas/             # JSON schemas for repair procedures and vehicle structures
 docs/                # Vision, roadmap, compiler model, schema notes
-tests/               # 86 tests covering all layers
+tests/               # 119 tests covering all layers
 ```
 
 ## Milestones
@@ -86,6 +86,9 @@ tests/               # 86 tests covering all layers
 - **Supplement candidate inference** — categorize likely parts, materials, and labor additions an estimator should include
 - **Cross-model motif analysis** — identify universal, common, and model-specific components across the corpus
 - **Missing operation detection** — compare a procedure against corpus patterns and flag components, joining methods, or corrosion requirements that appear in most procedures but are absent from this one
+- **Procedure sequencing** — infer a phased operation order (inspection → sectioning → replacement → joining → corrosion protection → verification)
+- **QA checklist generation** — produce a structured, prioritized checklist covering material compliance, joining verification, component replacement, corrosion protection, dimensional verification, and corpus-gap completeness checks
+- **JSON Schema validation** — all normalized data validated against `schemas/` using `jsonschema`, with type checking (not just field presence)
 
 ## Installation
 
@@ -185,6 +188,38 @@ result = find_corpus_motifs(load_all_procedures())
 # result["universal_corrosion_requirements"] → ["sealer_application_required"]
 # result["common_components"]            → components in ≥60% of procedures
 # result["model_specific_components"]    → components unique to one model
+```
+
+### Operation sequencing
+
+```python
+from repairgraph.query.loader import load_procedure
+from repairgraph.inference.sequencing import build_operation_sequence
+
+proc = load_procedure("Honda", 2025, "CR-V")
+result = build_operation_sequence(proc)
+for phase in result["phases"]:
+    print(f"{phase['phase']}. {phase['label']}")
+# 1. Pre-Repair Inspection
+# 2. Sectioning Preparation
+# 3. Component Removal and Replacement
+# 4. Panel Installation and Joining
+# 5. Corrosion Protection
+# 6. Post-Repair Verification
+```
+
+### QA checklist generation
+
+```python
+from repairgraph.inference.qa_checklist import generate_qa_checklist
+
+proc = load_procedure("Honda", 2025, "Accord")
+structure = load_vehicle_structure("Honda", 2025, "Accord")
+corpus = [p for p in load_all_procedures() if p["model"] != "Accord"]
+result = generate_qa_checklist(proc, structure, corpus)
+# result["by_priority"]["critical"] → UHSS joining compliance checks
+# result["by_priority"]["high"]     → replacement, corrosion, dimensional checks
+# result["by_category"]["completeness"] → corpus-gap checks
 ```
 
 ### Cross-vehicle queries
