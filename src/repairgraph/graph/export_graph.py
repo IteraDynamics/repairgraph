@@ -48,6 +48,24 @@ def build_graph(draft: dict) -> dict:
             label,
         )
 
+    for joining_method in draft.get("joining_methods", []):
+        method_id = canonical_id(joining_method)
+
+        add_node(
+            nodes_by_id,
+            method_id,
+            "joining_method",
+            joining_method.replace("_", " "),
+        )
+
+        edges.append(
+            {
+                "source": OPERATION_NODE_ID,
+                "target": method_id,
+                "relationship": "uses_joining_method",
+            }
+        )
+
     for dependency in draft.get("typed_dependencies", []):
         target = dependency["target"]
         target_id = canonical_id(target)
