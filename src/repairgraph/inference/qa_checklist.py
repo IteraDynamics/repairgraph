@@ -10,11 +10,11 @@ def generate_qa_checklist(
     corpus: list[dict] | None = None,
 ) -> dict:
     """
-    Produce a structured QA checklist for a repair procedure.
+    Produce a structured advisory QA checklist for a repair procedure.
 
-    Combines material compliance, joining verification, component
-    replacement confirmation, corrosion protection, dimensional
-    verification, and corpus-gap completeness checks.
+    Combines material awareness, joining verification, component replacement
+    confirmation, corrosion protection, dimensional verification, and corpus-gap
+    review items. Outputs should be verified against the applicable OEM source.
     """
     checks = []
 
@@ -27,20 +27,23 @@ def generate_qa_checklist(
                     "category": "material_compliance",
                     "priority": "critical",
                     "check": (
-                        f"Verify MIG brazing used at joins adjacent to "
+                        f"Verify OEM-specified joining method for joins adjacent to "
                         f"{risk['component'].replace('_', ' ')} "
                         f"({risk['tensile_strength_mpa']} MPa UHSS)"
                     ),
-                    "pass_condition": "MIG brazing confirmed at all joins adjacent to this component",
+                    "pass_condition": "OEM-specified joining method confirmed and documented",
                     "gap_detected": "gap" in risk,
+                    "basis": risk.get("basis", []),
+                    "confidence": risk.get("confidence", "medium"),
+                    "advisory": risk.get("advisory"),
                 })
 
     for method in get_joining_methods(procedure):
         checks.append({
             "category": "joining_compliance",
             "priority": "high",
-            "check": f"Verify {method.replace('_', ' ')} applied at all specified locations",
-            "pass_condition": "Join confirmed and meets OEM specification",
+            "check": f"Verify {method.replace('_', ' ')} where specified by the OEM procedure",
+            "pass_condition": "Join confirmed against OEM procedure and documented",
         })
 
     for dep in procedure.get("dependencies", []):
@@ -49,22 +52,22 @@ def generate_qa_checklist(
             checks.append({
                 "category": "component_replacement",
                 "priority": "high",
-                "check": f"Verify {target_label} replaced with new OEM part",
-                "pass_condition": "New OEM component installed and documented",
+                "check": f"Verify {target_label} replacement requirement against the OEM procedure",
+                "pass_condition": "Component replacement completed or documented as not applicable per OEM procedure",
             })
         elif dep["type"] == "replace_if_sectioned":
             checks.append({
                 "category": "component_replacement",
                 "priority": "medium",
-                "check": f"If sectioned: verify {target_label} replaced",
-                "pass_condition": "Component replaced, or confirmed intact and undamaged",
+                "check": f"If sectioned: verify whether {target_label} replacement applies",
+                "pass_condition": "Component replaced, or confirmed intact/not applicable and documented",
                 "conditional": True,
             })
         elif dep["type"] == "inspect_if_damaged":
             checks.append({
                 "category": "inspection",
                 "priority": "medium",
-                "check": f"Confirm {target_label} inspected for damage",
+                "check": f"Confirm {target_label} inspected for damage where procedure indicates",
                 "pass_condition": "Component inspected and result documented",
             })
 
@@ -72,8 +75,8 @@ def generate_qa_checklist(
         checks.append({
             "category": "corrosion_protection",
             "priority": "high",
-            "check": f"Verify {req.replace('_', ' ')} completed",
-            "pass_condition": "Application confirmed per OEM corrosion protection specification",
+            "check": f"Verify {req.replace('_', ' ')} where specified by the OEM procedure",
+            "pass_condition": "Application confirmed against OEM corrosion protection instructions",
         })
 
     for note in procedure.get("repair_notes", []):
@@ -82,22 +85,24 @@ def generate_qa_checklist(
                 "category": "dimensional_verification",
                 "priority": "high",
                 "check": note,
-                "pass_condition": "Confirmed within OEM tolerance before final welding",
+                "pass_condition": "Confirmed against OEM repair procedure before final welding",
             })
 
     if corpus:
         from repairgraph.inference.missing_operations import detect_missing_operations
         gaps = detect_missing_operations(procedure, corpus)
-        for gap in gaps["missing_components"]:
+        for gap in gaps["corpus_gap_components"]:
             checks.append({
                 "category": "completeness",
                 "priority": "high" if gap["confidence"] == "high" else "medium",
                 "check": (
-                    f"Confirm whether {gap['component'].replace('_', ' ')} requires attention "
-                    f"(present in {gap['corpus_frequency']:.0%} of similar procedures)"
+                    f"Review whether {gap['component'].replace('_', ' ')} is applicable "
+                    f"(present in {gap['corpus_frequency']:.0%} of comparable normalized procedures)"
                 ),
                 "pass_condition": "Component explicitly addressed or documented as not applicable",
                 "corpus_gap": True,
+                "confidence": gap["confidence"],
+                "advisory": gap["advisory"],
             })
 
     by_category: dict[str, list] = {}
@@ -115,4 +120,8 @@ def generate_qa_checklist(
         "checks": checks,
         "by_category": by_category,
         "by_priority": by_priority,
+        "interpretation_note": (
+            "QA checklist outputs are advisory review items derived from normalized RepairGraph data. "
+            "They should be verified against the applicable OEM procedure before operational use."
+        ),
     }
