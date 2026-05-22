@@ -75,6 +75,21 @@ def test_material_risk_returns_list():
     assert len(result["material_risks"]) > 0
 
 
+def test_material_risks_include_evidence_objects():
+    proc = load_procedure("Honda", 2025, "Accord")
+    structure = load_vehicle_structure("Honda", 2025, "Accord")
+    result = surface_material_risks(proc, structure)
+
+    for risk in result["material_risks"]:
+        assert "evidence" in risk
+        evidence = risk["evidence"]
+        assert "source_type" in evidence
+        assert "basis" in evidence
+        assert "confidence" in evidence
+        assert "requires_oem_verification" in evidence
+        assert "interpretation" in evidence
+
+
 def test_uhss_component_flagged_for_accord():
     proc = load_procedure("Honda", 2025, "Accord")
     structure = load_vehicle_structure("Honda", 2025, "Accord")
