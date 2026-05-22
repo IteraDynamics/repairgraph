@@ -4,6 +4,7 @@ from repairgraph.inference.qa_checklist import generate_qa_checklist
 from repairgraph.inference.repair_complexity import score_repair_complexity
 from repairgraph.inference.sequencing import build_operation_sequence
 from repairgraph.inference.supplement_candidates import infer_supplement_candidates
+from repairgraph.plan.reasoning import reason_over_repair_plan
 
 
 def build_repair_plan(
@@ -39,7 +40,7 @@ def build_repair_plan(
     if corpus:
         corpus_gaps = detect_missing_operations(procedure, corpus)
 
-    return {
+    plan = {
         "plan_version": "0.1",
         "model": procedure.get("model"),
         "oem": procedure.get("oem"),
@@ -66,3 +67,7 @@ def build_repair_plan(
             "All operations must be verified against the applicable OEM repair procedure."
         ),
     }
+
+    plan["reasoning"] = reason_over_repair_plan(plan)
+
+    return plan
