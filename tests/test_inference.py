@@ -9,6 +9,15 @@ from repairgraph.inference.supplement_candidates import infer_supplement_candida
 from repairgraph.inference.motifs import find_corpus_motifs
 
 
+def assert_evidence_object(evidence: dict):
+    assert "source_type" in evidence
+    assert "basis" in evidence
+    assert "confidence" in evidence
+    assert "requires_oem_verification" in evidence
+    assert "interpretation" in evidence
+    assert evidence["requires_oem_verification"] is True
+
+
 # --- repair_complexity ---
 
 def test_complexity_score_is_positive():
@@ -75,6 +84,16 @@ def test_material_risk_returns_list():
     assert len(result["material_risks"]) > 0
 
 
+def test_material_risks_include_evidence_objects():
+    proc = load_procedure("Honda", 2025, "Accord")
+    structure = load_vehicle_structure("Honda", 2025, "Accord")
+    result = surface_material_risks(proc, structure)
+
+    for risk in result["material_risks"]:
+        assert "evidence" in risk
+        assert_evidence_object(risk["evidence"])
+
+
 def test_uhss_component_flagged_for_accord():
     proc = load_procedure("Honda", 2025, "Accord")
     structure = load_vehicle_structure("Honda", 2025, "Accord")
@@ -114,6 +133,15 @@ def test_supplement_candidates_nonempty():
     proc = load_procedure("Honda", 2025, "CR-V")
     result = infer_supplement_candidates(proc)
     assert result["total"] > 0
+
+
+def test_supplement_candidates_include_evidence_objects():
+    proc = load_procedure("Honda", 2025, "CR-V")
+    result = infer_supplement_candidates(proc)
+
+    for candidate in result["supplement_candidates"]:
+        assert "evidence" in candidate
+        assert_evidence_object(candidate["evidence"])
 
 
 def test_replacement_parts_are_supplement_candidates():
