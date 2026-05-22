@@ -23,6 +23,7 @@ def test_repair_plan_structure():
     assert "material_risks" in plan
     assert "corpus_gap_analysis" in plan
     assert "qa_checklist" in plan
+    assert "reasoning" in plan
     assert "summary" in plan
 
 
@@ -83,3 +84,16 @@ def test_repair_plan_contains_qa_checks():
     plan = build_repair_plan(proc, structure)
 
     assert plan["qa_checklist"]["total_checks"] > 0
+
+
+def test_repair_plan_contains_reasoning_findings():
+    proc = load_procedure("Honda", 2025, "Accord")
+    structure = load_vehicle_structure("Honda", 2025, "Accord")
+    corpus = _corpus_without("Accord")
+
+    plan = build_repair_plan(proc, structure, corpus)
+
+    reasoning = plan["reasoning"]
+
+    assert reasoning["finding_count"] > 0
+    assert len(reasoning["findings"]) > 0
