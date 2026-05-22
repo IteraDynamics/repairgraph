@@ -4,13 +4,12 @@ from repairgraph.query.query_procedures import get_joining_methods
 UHSS_THRESHOLD_MPA = 980
 
 _UHSS_IMPLICATION = (
-    "Spot welding prohibited adjacent to this component. "
-    "MIG brazing required for flange joins."
+    "UHSS material detected. Verify OEM-specified joining method for adjacent joins "
+    "before repair planning or QA signoff."
 )
 
 _HSS_IMPLICATION = (
-    "Confirm weld compatibility before proceeding. "
-    "MAG plug weld or MIG brazing may be required at joins."
+    "HSS material detected. Confirm OEM weld/joining compatibility before proceeding."
 )
 
 
@@ -31,11 +30,20 @@ def surface_material_risks(procedure: dict, structure: dict) -> dict:
                 "classification": classification,
                 "tensile_strength_mpa": strength,
                 "risk": "uhss_joining_constraint",
-                "implication": _UHSS_IMPLICATION,
+                "advisory": _UHSS_IMPLICATION,
+                "confidence": "medium",
+                "basis": [
+                    "material_strength_at_or_above_uhss_threshold",
+                    "vehicle_structure_material_map",
+                ],
                 "mig_brazing_in_procedure": mig_brazing_present,
             }
             if not mig_brazing_present:
-                risk_item["gap"] = "mig_brazing_not_listed_in_procedure"
+                risk_item["gap"] = "mig_brazing_not_listed_in_normalized_procedure"
+                risk_item["gap_advisory"] = (
+                    "UHSS material is present but MIG brazing is not listed in the normalized "
+                    "procedure object. Verify the source procedure and joining instructions."
+                )
             risks.append(risk_item)
 
         elif strength >= 590:
@@ -44,7 +52,12 @@ def surface_material_risks(procedure: dict, structure: dict) -> dict:
                 "classification": classification,
                 "tensile_strength_mpa": strength,
                 "risk": "hss_joining_awareness",
-                "implication": _HSS_IMPLICATION,
+                "advisory": _HSS_IMPLICATION,
+                "confidence": "medium",
+                "basis": [
+                    "hss_material_strength_detected",
+                    "vehicle_structure_material_map",
+                ],
             })
 
     zinc_components = [
@@ -61,5 +74,9 @@ def surface_material_risks(procedure: dict, structure: dict) -> dict:
         "zinc_plated_components": zinc_components,
         "uhss_component_count": sum(
             1 for r in risks if r["risk"] == "uhss_joining_constraint"
+        ),
+        "interpretation_note": (
+            "Material-risk outputs are advisory flags derived from normalized structure data. "
+            "They should be verified against the applicable OEM procedure before operational use."
         ),
     }
