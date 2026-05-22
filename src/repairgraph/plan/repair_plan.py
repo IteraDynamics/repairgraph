@@ -4,6 +4,7 @@ from repairgraph.inference.qa_checklist import generate_qa_checklist
 from repairgraph.inference.repair_complexity import score_repair_complexity
 from repairgraph.inference.sequencing import build_operation_sequence
 from repairgraph.inference.supplement_candidates import infer_supplement_candidates
+from repairgraph.plan.decision_propagation import propagate_repair_decisions
 from repairgraph.plan.reasoning import reason_over_repair_plan
 
 
@@ -69,5 +70,6 @@ def build_repair_plan(
     }
 
     plan["reasoning"] = reason_over_repair_plan(plan)
+    plan["decision_propagation"] = propagate_repair_decisions(plan)
 
     return plan
