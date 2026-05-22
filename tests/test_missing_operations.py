@@ -6,6 +6,15 @@ def _corpus_without(model: str) -> list[dict]:
     return [p for p in load_all_procedures() if p.get("model") != model]
 
 
+def assert_evidence_object(evidence: dict):
+    assert "source_type" in evidence
+    assert "basis" in evidence
+    assert "confidence" in evidence
+    assert "requires_oem_verification" in evidence
+    assert "interpretation" in evidence
+    assert evidence["requires_oem_verification"] is True
+
+
 def test_result_structure():
     proc = load_procedure("Honda", 2025, "CR-V")
     result = detect_missing_operations(proc, _corpus_without("CR-V"))
@@ -41,6 +50,8 @@ def test_corpus_gap_component_has_required_fields():
         assert "corpus_frequency" in item
         assert "confidence" in item
         assert "advisory" in item
+        assert "evidence" in item
+        assert_evidence_object(item["evidence"])
         assert item["confidence"] in ("high", "moderate")
 
 
@@ -68,6 +79,16 @@ def test_corpus_gap_joining_methods_are_universal_only():
     for item in result["corpus_gap_joining_methods"]:
         assert item["confidence"] == "high"
         assert "advisory" in item
+        assert "evidence" in item
+        assert_evidence_object(item["evidence"])
+
+
+def test_corpus_gap_corrosion_requirements_include_evidence():
+    proc = load_procedure("Honda", 2025, "Pilot")
+    result = detect_missing_operations(proc, _corpus_without("Pilot"))
+    for item in result["corpus_gap_corrosion_requirements"]:
+        assert "evidence" in item
+        assert_evidence_object(item["evidence"])
 
 
 def test_sealer_not_flagged_as_corpus_gap_when_procedure_has_it():
