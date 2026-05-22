@@ -1,0 +1,76 @@
+{
+  "oem": "Honda",
+  "year": 2025,
+  "model": "Odyssey",
+  "operation": "outer_panel_rear_side_area_replacement",
+  "operation_family": "quarter_panel",
+  "joining_methods": [
+    "spot_weld",
+    "mag_plug_weld",
+    "adhesive_bonding",
+    "urethane_foam_retention"
+  ],
+  "sectioning_locations": [
+    {
+      "zone": "d_pillar_lower",
+      "description": "D-pillar lower position behind sliding door opening"
+    },
+    {
+      "zone": "rear_lower_edge",
+      "description": "Rear lower edge at wheel arch junction"
+    }
+  ],
+  "dependencies": [
+    {
+      "type": "inspect_if_damaged",
+      "target": "d_pillar_inner_reinforcement"
+    },
+    {
+      "type": "inspect_if_damaged",
+      "target": "rear_side_stiffener"
+    },
+    {
+      "type": "replace_component",
+      "target": "wheel_arch_separator"
+    },
+    {
+      "type": "replace_component",
+      "target": "rear_quarter_separator"
+    },
+    {
+      "type": "replace_if_sectioned",
+      "target": "d_pillar_gutter"
+    }
+  ],
+  "corrosion_requirements": [
+    "sealer_application_required",
+    "undercoating_application_required",
+    "urethane_foam_management_required"
+  ],
+  "repair_notes": [
+    "Confirm sheet thickness, tensile strength, and zinc treatment before welding.",
+    "Select sectioning locations in consideration of sliding door track clearance.",
+    "Check D-pillar inner reinforcement for deformation.",
+    "Restore all urethane foam acoustic separators removed during panel replacement."
+  ],
+  "spatial_relationships": [
+    {
+      "source": "rear_side_outer_panel",
+      "relationship": "adjacent_to",
+      "target": "d_pillar_inner_reinforcement"
+    },
+    {
+      "source": "rear_side_outer_panel",
+      "relationship": "adjacent_to",
+      "target": "rear_inner_panel"
+    },
+    {
+      "source": "rear_side_outer_panel",
+      "relationship": "joined_to",
+      "target": "wheel_arch_separator"
+    }
+  ],
+  "source": {
+    "document": "2025 Honda Odyssey Outer Panel Rear Side Area Replacement"
+  }
+}

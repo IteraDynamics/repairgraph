@@ -1,0 +1,51 @@
+{
+  "oem": "Honda",
+  "year": 2025,
+  "model": "Civic",
+  "domain": "roof_and_side_panel_construction",
+  "materials": [
+    {
+      "component": "roof_panel",
+      "thickness_mm": 0.65,
+      "tensile_strength_mpa": 270,
+      "zinc_plated": true,
+      "classification": "mild"
+    },
+    {
+      "component": "rear_roof_rail_upper",
+      "thickness_mm": 1.0,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_roof_rail_lower",
+      "thickness_mm": 0.9,
+      "tensile_strength_mpa": 440,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_pillar_inner",
+      "thickness_mm": 1.0,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    }
+  ],
+  "structure_nodes": [
+    "rear_side_outer_panel",
+    "rear_pillar_gutter",
+    "wheel_arch_separator",
+    "rear_pillar_separator",
+    "rear_combination_adapter",
+    "rear_inner_panel",
+    "side_sill_extension_end_flange"
+  ],
+  "notes": [
+    "Honda defines 340-780 MPa tensile steel as HSS.",
+    "Honda defines 980 MPa and higher tensile steel as UHSS.",
+    "Civic construction uses lower tensile classifications than CR-V or Accord."
+  ],
+  "source": {
+    "document": "2025 Honda Civic Roof and Side Panel Construction",
+    "operation_reference": "Rear Side Outer Panel Replacement"
+  }
+}

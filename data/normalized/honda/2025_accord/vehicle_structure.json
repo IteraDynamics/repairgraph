@@ -1,0 +1,63 @@
+{
+  "oem": "Honda",
+  "year": 2025,
+  "model": "Accord",
+  "domain": "roof_and_side_panel_construction",
+  "materials": [
+    {
+      "component": "roof_panel",
+      "thickness_mm": 0.70,
+      "tensile_strength_mpa": 340,
+      "zinc_plated": true,
+      "classification": "HSS"
+    },
+    {
+      "component": "rear_roof_rail_upper",
+      "thickness_mm": 1.2,
+      "tensile_strength_mpa": 1500,
+      "zinc_plated": false,
+      "classification": "UHSS"
+    },
+    {
+      "component": "rear_roof_rail_lower",
+      "thickness_mm": 1.0,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    },
+    {
+      "component": "quarter_pillar_stiffener",
+      "thickness_mm": 1.4,
+      "tensile_strength_mpa": 980,
+      "classification": "UHSS"
+    },
+    {
+      "component": "rear_pillar_inner",
+      "thickness_mm": 1.2,
+      "tensile_strength_mpa": 590,
+      "classification": "HSS"
+    }
+  ],
+  "structure_nodes": [
+    "rear_side_outer_panel",
+    "rear_pillar_gutter",
+    "rear_pillar_gutter_lower",
+    "wheel_arch_separator",
+    "rear_pillar_separator",
+    "quarter_pillar_stiffener",
+    "rear_combination_adapter",
+    "rear_combination_adapter_lower",
+    "rear_inner_panel",
+    "rear_roof_rail_upper",
+    "side_sill_extension_end_flange"
+  ],
+  "notes": [
+    "Honda defines 340-780 MPa tensile steel as HSS.",
+    "Honda defines 980 MPa and higher tensile steel as UHSS.",
+    "Accord rear roof rail upper is 1500 MPa UHSS requiring MIG brazing at adjacent joins.",
+    "Quarter pillar stiffener is 980 MPa UHSS."
+  ],
+  "source": {
+    "document": "2025 Honda Accord Roof and Side Panel Construction",
+    "operation_reference": "Rear Side Outer Panel Replacement"
+  }
+}

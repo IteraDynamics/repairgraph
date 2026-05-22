@@ -3,12 +3,18 @@ name = "repairgraph"
 version = "0.1.0"
 description = "AI-native procedural intelligence engine for collision repair"
 requires-python = ">=3.11"
+dependencies = [
+  "jsonschema>=4.0",
+]
 
 [project.scripts]
 repairgraph-export-draft = "repairgraph.extract.export_draft_json:main"
 repairgraph-export-graph = "repairgraph.graph.export_graph_json:main"
 repairgraph-export-mermaid = "repairgraph.graph.export_mermaid:main"
 repairgraph-validate = "repairgraph.validate:main"
+repairgraph-query = "repairgraph.query.cli:main"
+repairgraph-export-normalized-graph = "repairgraph.graph.export_normalized_graph:main"
+repairgraph-infer = "repairgraph.inference.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
