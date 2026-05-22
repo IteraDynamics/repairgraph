@@ -1,3 +1,4 @@
+from repairgraph.evidence import build_evidence
 from repairgraph.inference.motifs import find_corpus_motifs
 from repairgraph.taxonomy.aliases import resolve_alias
 from repairgraph.query.query_procedures import (
@@ -37,6 +38,10 @@ def detect_missing_operations(procedure: dict, corpus: list[dict]) -> dict:
             "corpus_gap_joining_methods": [],
             "corpus_gap_corrosion_requirements": [],
             "total_gaps": 0,
+            "interpretation_note": (
+                "Corpus-gap outputs identify patterns across the normalized corpus and should not "
+                "be interpreted as definitive OEM omissions."
+            ),
         }
 
     present_components = _resolve_components(procedure)
@@ -47,38 +52,58 @@ def detect_missing_operations(procedure: dict, corpus: list[dict]) -> dict:
     for item in motifs["common_components"]:
         component = item["component"]
         if component not in present_components:
+            confidence = "high" if item["frequency"] >= 0.8 else "moderate"
+            evidence = build_evidence(
+                source_type="corpus_pattern",
+                basis=["corpus_common_component"],
+                confidence=confidence,
+                interpretation="corpus_pattern",
+            )
             corpus_gap_components.append({
                 "component": component,
                 "corpus_frequency": item["frequency"],
                 "present_in": item["models"],
-                "confidence": "high" if item["frequency"] >= 0.8 else "moderate",
+                "confidence": evidence["confidence"],
                 "advisory": (
                     "Common in comparable procedures but not present in this normalized object. "
                     "Verify applicability against the OEM source procedure."
                 ),
+                "evidence": evidence,
             })
 
-    corpus_gap_joining = [
-        {
-            "method": m,
-            "note": "present in all corpus procedures",
-            "confidence": "high",
-            "advisory": "Verify whether this joining method is applicable to the current procedure.",
-        }
-        for m in motifs["universal_joining_methods"]
-        if m not in present_joining
-    ]
+    corpus_gap_joining = []
+    for method in motifs["universal_joining_methods"]:
+        if method not in present_joining:
+            evidence = build_evidence(
+                source_type="corpus_pattern",
+                basis=["corpus_universal_joining_method"],
+                confidence="high",
+                interpretation="corpus_pattern",
+            )
+            corpus_gap_joining.append({
+                "method": method,
+                "note": "present in all corpus procedures",
+                "confidence": evidence["confidence"],
+                "advisory": "Verify whether this joining method is applicable to the current procedure.",
+                "evidence": evidence,
+            })
 
-    corpus_gap_corrosion = [
-        {
-            "requirement": r,
-            "note": "present in all corpus procedures",
-            "confidence": "high",
-            "advisory": "Verify whether this corrosion requirement applies to the current procedure.",
-        }
-        for r in motifs["universal_corrosion_requirements"]
-        if r not in present_corrosion
-    ]
+    corpus_gap_corrosion = []
+    for requirement in motifs["universal_corrosion_requirements"]:
+        if requirement not in present_corrosion:
+            evidence = build_evidence(
+                source_type="corpus_pattern",
+                basis=["corpus_universal_corrosion_requirement"],
+                confidence="high",
+                interpretation="corpus_pattern",
+            )
+            corpus_gap_corrosion.append({
+                "requirement": requirement,
+                "note": "present in all corpus procedures",
+                "confidence": evidence["confidence"],
+                "advisory": "Verify whether this corrosion requirement applies to the current procedure.",
+                "evidence": evidence,
+            })
 
     return {
         "model": procedure.get("model"),
