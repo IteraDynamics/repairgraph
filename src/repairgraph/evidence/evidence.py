@@ -11,6 +11,7 @@ ALLOWED_SOURCE_TYPES = {
 ALLOWED_CONFIDENCE = {
     "high",
     "medium",
+    "moderate",
     "low",
     "conditional",
 }
