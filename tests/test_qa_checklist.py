@@ -6,6 +6,15 @@ def _corpus_without(model: str) -> list[dict]:
     return [p for p in load_all_procedures() if p.get("model") != model]
 
 
+def assert_evidence_object(evidence: dict):
+    assert "source_type" in evidence
+    assert "basis" in evidence
+    assert "confidence" in evidence
+    assert "requires_oem_verification" in evidence
+    assert "interpretation" in evidence
+    assert evidence["requires_oem_verification"] is True
+
+
 def test_result_structure():
     proc = load_procedure("Honda", 2025, "CR-V")
     result = generate_qa_checklist(proc)
@@ -25,6 +34,18 @@ def test_checks_nonempty():
     proc = load_procedure("Honda", 2025, "CR-V")
     result = generate_qa_checklist(proc)
     assert result["total_checks"] > 0
+
+
+def test_all_checks_include_evidence_objects():
+    proc = load_procedure("Honda", 2025, "Accord")
+    structure = load_vehicle_structure("Honda", 2025, "Accord")
+    corpus = _corpus_without("Accord")
+
+    result = generate_qa_checklist(proc, structure, corpus)
+
+    for check in result["checks"]:
+        assert "evidence" in check
+        assert_evidence_object(check["evidence"])
 
 
 def test_by_priority_covers_all_checks():
