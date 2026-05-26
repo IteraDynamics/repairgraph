@@ -395,3 +395,58 @@ Milestone 0.7 should implement:
 5. Next-action recommendation
 6. CLI export for all Honda seed procedures
 7. Tests for state initialization, projection, blockers, and advisory semantics
+
+## Implementation status
+
+All core state workflow modules are implemented.
+
+| Module | Status |
+|---|---|
+| `schema.py` | implemented |
+| `initialize.py` | implemented |
+| `events.py` | implemented |
+| `project.py` | implemented |
+| `export_json.py` | implemented |
+| `blockers.py` | implemented |
+| `next_actions.py` | implemented |
+| `cli.py` | implemented |
+
+Tests implemented:
+
+| Test file | Status |
+|---|---|
+| `tests/test_state_schema.py` | implemented |
+| `tests/test_state_initialize.py` | implemented |
+| `tests/test_state_events.py` | implemented |
+| `tests/test_state_project.py` | implemented |
+| `tests/test_state_export.py` | implemented |
+| `tests/test_state_blockers.py` | implemented |
+| `tests/test_state_next_actions.py` | implemented |
+| `tests/test_state_cli.py` | implemented |
+
+## CLI usage
+
+Initialize a Honda 2025 Accord repair state, apply a deterministic sample event
+ledger, project the resulting state, and export to JSON:
+
+```bash
+python -m repairgraph.state.cli
+```
+
+Output:
+
+```text
+data/extracted/state/accord_projected_state.json
+```
+
+The summary printed to stdout includes session status, phase/action/QA gate/blocker
+counts, number of events applied, and next recommended action count.
+
+## Advisory note
+
+All generated state JSON is **advisory workflow intelligence** derived from
+RepairGraph procedure data and explicit state events.
+
+It is not certification of repair completion, OEM compliance, or repair quality.
+All state projections require OEM procedure verification and qualified technician
+review before acting on any recommendation.

@@ -175,6 +175,55 @@ RepairGraph topology exports are designed to support:
 - sequence-aware workflows
 - future AR-native repair execution systems
 
+## Repair State Workflow Layer
+
+The repair state workflow layer converts static procedure intelligence into
+stateful repair execution tracking. It provides:
+
+- **Event-sourced state** — append-only event ledger reconstructs workflow state
+  at any point in the repair lifecycle
+- **Phase and action tracking** — maps workflow progress to operation phases,
+  individual actions, and spatial topology zones
+- **QA gate blocking** — critical QA items prevent session completion
+- **Blocker inspection** — helpers to query open blockers, phase blockers,
+  and session completion blockers
+- **Next-action recommendations** — advisory action IDs and resolved
+  `ActionState` objects for the current workflow position
+- **JSON export** — full state serialization with provenance metadata
+
+### Modules
+
+| Module | Purpose |
+|---|---|
+| `state/schema.py` | Dataclasses and allowed status constants |
+| `state/initialize.py` | Build initial state from sequence, topology, and QA |
+| `state/events.py` | Event factory functions and validation |
+| `state/project.py` | Apply event ledger to produce projected state |
+| `state/export_json.py` | Export RepairState to JSON-serializable dict |
+| `state/blockers.py` | Blocker inspection utilities |
+| `state/next_actions.py` | Next-action recommendation utilities |
+| `state/cli.py` | Demo CLI for Accord state projection and export |
+
+### CLI
+
+```bash
+python -m repairgraph.state.cli
+```
+
+Initializes a Honda 2025 Accord repair state, applies a deterministic sample
+event ledger, and writes the projected state to:
+
+```text
+data/extracted/state/accord_projected_state.json
+```
+
+### Advisory caveat
+
+All repair state outputs are **advisory workflow projections** derived from
+RepairGraph procedure data and explicit state events. They do not certify repair
+completion, OEM compliance, or repair quality. OEM procedure verification and
+qualified technician review are required before acting on any recommendation.
+
 ## Running tests
 
 ```bash
