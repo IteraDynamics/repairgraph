@@ -396,6 +396,56 @@ Milestone 0.7 should implement:
 6. CLI export for all Honda seed procedures
 7. Tests for state initialization, projection, blockers, and advisory semantics
 
+## AR Workflow Payload Contract
+
+The AR workflow payload contract defines a stable, machine-readable payload shape
+that AR technician interfaces, workflow UIs, and API clients can consume.
+It is built on top of the existing repair state layer and is not a renderer, UI,
+or API endpoint.
+
+**Module:** `repairgraph.state.ar_payload`
+
+**CLI command:**
+
+```bash
+python -m repairgraph.state.ar_cli
+```
+
+**Output path:**
+
+```text
+data/extracted/state/accord_ar_workflow_payload.json
+```
+
+**Advisory caveat:** All AR workflow payload outputs are advisory workflow
+intelligence derived from RepairGraph procedure data and explicit state events.
+They do not certify repair completion, OEM compliance, or repair quality.
+OEM procedure verification and qualified technician review are required before
+acting on any recommendation.
+
+**Top-level payload sections:**
+
+| Section | Description |
+|---|---|
+| `schema_name` | Always `"repairgraph.ar_workflow_payload"` |
+| `schema_version` | Always `"0.1"` |
+| `advisory` | Always `true` |
+| `generated_by` | Always `"repairgraph.state.ar_payload"` |
+| `advisory_note` | Human-readable advisory disclaimer |
+| `session` | Session identity: session_id, oem, year, model, operation, status, current_phase |
+| `workflow_summary` | Aggregate counts: phases, actions, QA gates, blockers, open blockers, events, next actions |
+| `active_context` | Active/blocked phase and zone IDs; next action IDs |
+| `overlays` | Lists of zone overlays, action guidance, QA gate items, and blocker items — each with a `guidance_role` or `overlay_role` classifier |
+| `source_state` | Source schema reference: `"repairgraph.repair_state"` v0.1 |
+
+**Public functions:**
+
+- `build_ar_workflow_payload(state)` — builds the complete payload dict
+- `build_zone_overlay_items(state)` — zone items with `overlay_role`
+- `build_action_guidance_items(state)` — action items with `guidance_role`
+- `build_qa_gate_items(state)` — QA gate items with `guidance_role`
+- `build_blocker_items(state)` — blocker items with `guidance_role`
+
 ## Implementation status
 
 All core state workflow modules are implemented.
@@ -410,6 +460,8 @@ All core state workflow modules are implemented.
 | `blockers.py` | implemented |
 | `next_actions.py` | implemented |
 | `cli.py` | implemented |
+| `ar_payload.py` | implemented |
+| `ar_cli.py` | implemented |
 
 Tests implemented:
 
@@ -423,6 +475,8 @@ Tests implemented:
 | `tests/test_state_blockers.py` | implemented |
 | `tests/test_state_next_actions.py` | implemented |
 | `tests/test_state_cli.py` | implemented |
+| `tests/test_state_ar_payload.py` | implemented |
+| `tests/test_state_ar_cli.py` | implemented |
 
 ## CLI usage
 
