@@ -7,6 +7,9 @@ venv/
 .DS_Store
 *.egg-info/
 
+# Generated extraction outputs (not committed)
+data/extracted/
+
 # Local-only source documents
 data/raw/**/*.pdf
 data/raw/**/*.png
