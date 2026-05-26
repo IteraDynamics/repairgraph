@@ -364,3 +364,23 @@ def blocker_resolved_event(
         notes=notes,
         evidence=evidence,
     )
+
+def session_cancelled_event(
+    *,
+    session_id: str,
+    actor: str,
+    event_id: str | None = None,
+    timestamp: str | None = None,
+    notes: str | None = None,
+    evidence: dict | None = None,
+) -> RepairEvent:
+    return make_repair_event(
+        event_id=event_id,
+        timestamp=timestamp,
+        event_type="session_cancelled",
+        actor=actor,
+        target_type="session",
+        target_id=session_id,
+        notes=notes,
+        evidence=evidence,
+    )
