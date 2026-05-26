@@ -1,0 +1,23 @@
+{
+  "operation_overlay": {
+    "stages": [
+      {
+        "stage": 3,
+        "name": "component_replacement",
+        "zone_refs": [
+          "rear_combination_adapter",
+          "rear_pillar_separator",
+          "wheel_arch_separator"
+        ]
+      },
+      {
+        "stage": 4,
+        "name": "panel_installation_and_joining",
+        "zone_refs": [
+          "rear_side_outer_panel",
+          "rear_inner_panel"
+        ]
+      }
+    ]
+  }
+}
