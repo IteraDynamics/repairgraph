@@ -217,6 +217,31 @@ event ledger, and writes the projected state to:
 data/extracted/state/accord_projected_state.json
 ```
 
+### AR Workflow Payload
+
+The AR workflow payload contract defines a stable, machine-readable payload that
+AR technician interfaces, workflow UIs, and API clients can consume. It is built
+on top of the repair state layer and is not a renderer, UI, or API endpoint.
+
+```bash
+python -m repairgraph.state.ar_cli
+```
+
+Output:
+
+```text
+data/extracted/state/accord_ar_workflow_payload.json
+```
+
+The payload includes per-zone overlay roles (active, blocked, completed, inactive),
+per-action guidance roles (next recommended, active, blocked, completed), QA gate
+roles (blocking open, passed, not applicable), blocker roles (critical open, open,
+resolved), workflow summary counts, and active context lists — all as a flat,
+JSON-serializable contract for downstream clients.
+
+This is a payload contract for downstream AR/workflow clients, not a renderer or
+certification system.
+
 ### Advisory caveat
 
 All repair state outputs are **advisory workflow projections** derived from
