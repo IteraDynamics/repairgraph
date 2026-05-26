@@ -1,0 +1,28 @@
+{
+  "sequence_topology": [
+    {
+      "phase": 1,
+      "name": "pre_repair_inspection"
+    },
+    {
+      "phase": 2,
+      "name": "sectioning_preparation"
+    },
+    {
+      "phase": 3,
+      "name": "component_replacement"
+    },
+    {
+      "phase": 4,
+      "name": "panel_installation_and_joining"
+    },
+    {
+      "phase": 5,
+      "name": "corrosion_protection"
+    },
+    {
+      "phase": 6,
+      "name": "post_repair_verification"
+    }
+  ]
+}

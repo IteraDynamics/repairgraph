@@ -1,0 +1,15 @@
+graph LR
+  subgraph sg_rear[Rear Section]
+    rear_combination_adapter["rear combination adapter"]
+    rear_inner_panel["rear inner panel"]
+    rear_pillar_gutter["rear pillar gutter"]
+    rear_pillar_inner["rear pillar inner"]
+    rear_pillar_separator["rear pillar separator"]
+    rear_roof_rail_lower["rear roof rail lower"]
+    rear_roof_rail_upper["rear roof rail upper"]
+    rear_side_outer_panel["rear side outer panel"]
+  end
+
+  rear_side_outer_panel -->|adjacent| rear_pillar_gutter
+  rear_side_outer_panel -->|adjacent| rear_inner_panel
+  rear_side_outer_panel -->|joined| wheel_arch_separator
