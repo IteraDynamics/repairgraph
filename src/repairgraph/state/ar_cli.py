@@ -12,11 +12,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from repairgraph.query.loader import load_procedure, load_vehicle_structure
+from repairgraph.state.demo import build_accord_projected_state
 from repairgraph.state.ar_payload import build_ar_workflow_payload
-from repairgraph.state.cli import _build_sample_events
-from repairgraph.state.initialize import initialize_repair_state
-from repairgraph.state.project import project_repair_state
 
 DEFAULT_OUTPUT_PATH = "data/extracted/state/accord_ar_workflow_payload.json"
 
@@ -27,13 +24,7 @@ def run_ar_demo(output_path: str = DEFAULT_OUTPUT_PATH) -> dict:
     Returns the AR payload dict so callers can inspect it without re-running.
     Does not require network access.
     """
-    procedure = load_procedure("Honda", 2025, "Accord")
-    structure = load_vehicle_structure("Honda", 2025, "Accord")
-
-    initial_state = initialize_repair_state(procedure, structure)
-    events = _build_sample_events(initial_state)
-    projected = project_repair_state(initial_state, events)
-
+    projected = build_accord_projected_state()
     payload = build_ar_workflow_payload(projected)
 
     out = Path(output_path)

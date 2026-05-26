@@ -203,6 +203,11 @@ stateful repair execution tracking. It provides:
 | `state/blockers.py` | Blocker inspection utilities |
 | `state/next_actions.py` | Next-action recommendation utilities |
 | `state/cli.py` | Demo CLI for Accord state projection and export |
+| `state/demo.py` | Shared deterministic Accord demo builder (used by CLI and API) |
+| `state/ar_payload.py` | AR workflow payload builder |
+| `state/ar_cli.py` | Demo CLI for AR payload export |
+| `api/app.py` | FastAPI application wiring |
+| `api/state_routes.py` | Internal state workflow API router |
 
 ### CLI
 
@@ -241,6 +246,47 @@ JSON-serializable contract for downstream clients.
 
 This is a payload contract for downstream AR/workflow clients, not a renderer or
 certification system.
+
+### Internal State API
+
+RepairGraph exposes its state workflow and AR payload intelligence through a
+local FastAPI application. Endpoints are demo/internal only — no authentication,
+no persistence, no external network calls.
+
+**Start the server:**
+
+```bash
+uvicorn repairgraph.api.app:app --reload
+```
+
+**Endpoints:**
+
+| Endpoint | Description |
+|---|---|
+| `GET /internal/state/accord/initial` | Initial (un-projected) Accord RepairState |
+| `GET /internal/state/accord/projected` | Projected Accord state after deterministic demo event ledger |
+| `GET /internal/state/accord/ar-payload` | AR workflow payload for the projected Accord state |
+| `GET /internal/state/accord/summary` | Compact summary: session, workflow counts, blockers, next actions |
+
+**Example:**
+
+```bash
+curl http://localhost:8000/internal/state/accord/initial
+curl http://localhost:8000/internal/state/accord/projected
+curl http://localhost:8000/internal/state/accord/ar-payload
+curl http://localhost:8000/internal/state/accord/summary
+```
+
+Or open in a browser: `http://localhost:8000/docs` for the interactive API explorer.
+
+All endpoints return the same advisory workflow intelligence as the CLI tools,
+generated from the same shared demo builder (`state/demo.py`). No files are
+written on any request.
+
+> **Advisory:** All API responses are advisory workflow projections derived
+> from RepairGraph procedure data and explicit state events. These are local,
+> internal demo endpoints — not a production API surface. No authentication is
+> required. No repair certification or OEM compliance is implied.
 
 ### Advisory caveat
 
