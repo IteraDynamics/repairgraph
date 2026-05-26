@@ -12,7 +12,8 @@ This document defines the first version of that state model. It is intentionally
 
 ```text
 static procedure intelligence
-    ↓
+    |
+    v
 stateful repair workflow intelligence
 ```
 
@@ -27,26 +28,31 @@ RepairGraph should be able to answer:
 
 ## Core principles
 
-1. **OEM primacy** — OEM procedures remain authoritative.
-2. **Advisory state** — RepairGraph tracks workflow state; it does not certify repair completion.
-3. **Evidence-backed transitions** — Every state transition should carry evidence, operator/source, timestamp, and basis.
-4. **Deterministic progression** — State is derived from known operation phases, topology regions, QA gates, and explicit completion events.
-5. **No hidden automation authority** — RepairGraph may suggest next actions but should not silently advance repair state without an explicit event.
-6. **Append-only event history** — State should be reconstructable from an event ledger.
+1. **OEM primacy** - OEM procedures remain authoritative.
+2. **Advisory state** - RepairGraph tracks workflow state; it does not certify repair completion.
+3. **Evidence-backed transitions** - Every state transition should carry evidence, operator/source, timestamp, and basis.
+4. **Deterministic progression** - State is derived from known operation phases, topology regions, QA gates, and explicit completion events.
+5. **No hidden automation authority** - RepairGraph may suggest next actions but should not silently advance repair state without an explicit event.
+6. **Append-only event history** - State should be reconstructable from an event ledger.
 
 ## Relationship to existing layers
 
 ```text
 Normalized procedure
-    ↓
+    |
+    v
 Operation sequence
-    ↓
+    |
+    v
 Spatial topology
-    ↓
+    |
+    v
 QA checklist
-    ↓
+    |
+    v
 Repair state model
-    ↓
+    |
+    v
 Execution guidance / AR / workflow UI
 ```
 
