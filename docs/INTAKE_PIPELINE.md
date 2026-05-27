@@ -227,15 +227,58 @@ Outputs to `data/extracted/intake/`:
 
 ---
 
+## Browser upload workflow
+
+RepairGraph includes a local browser-based upload page for the intake pipeline.
+
+**Start the server:**
+
+```bash
+python -m uvicorn repairgraph.api.app:app --reload
+```
+
+**Open the intake UI:**
+
+```
+http://localhost:8000/internal/intake
+```
+
+**Workflow:**
+
+1. Select or drag-and-drop one or more OEM repair documents into the upload zone
+2. Click **Analyze Packet** — the page calls `POST /internal/intake/classify`,
+   then renders summary cards, detected packet metadata, role coverage, per-file
+   classification table, and diagnostics inline
+3. Click **View Full Report** — the page calls `POST /internal/intake/report`
+   and opens the portable HTML intake report in a new browser tab
+
+**UI limitations:**
+
+- Files are sent on every request — the UI does not cache or store prior results
+- Classification is heuristic; low-confidence or unknown-role results are surfaced
+  as warnings, not errors
+- PDF handling is raw ASCII extraction only; scanned PDFs will produce minimal results
+- There is no session persistence; closing or refreshing the page resets the UI
+
+**No persistence, no auth, no document storage:**
+
+The upload page is local/internal only. No files are stored on the server. No
+authentication is required. No database is involved. All processing is in-memory
+per request and discarded after the response. This is not a production SaaS surface.
+
+---
+
 ## API endpoints
 
 ```
+GET  /internal/intake
 POST /internal/intake/classify
 POST /internal/intake/report
 ```
 
-Both accept multipart file uploads (`files` field). No files are retained.
-`/classify` returns JSON; `/report` returns `text/html`.
+`GET /internal/intake` returns the self-contained HTML upload page.
+`POST /classify` and `/report` accept multipart file uploads (`files` field).
+No files are retained. `/classify` returns JSON; `/report` returns `text/html`.
 
 See `src/repairgraph/api/intake_routes.py` for implementation.
 

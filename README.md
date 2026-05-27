@@ -492,11 +492,42 @@ The HTML report includes:
 - Missing role report with descriptions
 - Readiness assessment
 
+### Intake Upload UI
+
+RepairGraph includes a local browser-based upload page for the intake pipeline.
+
+**Start the server:**
+
+```bash
+python -m uvicorn repairgraph.api.app:app --reload
+```
+
+**Open in a browser:**
+
+```
+http://localhost:8000/internal/intake
+```
+
+The page provides:
+- File picker and drag-and-drop zone for multiple OEM repair documents
+- **Analyze Packet** — calls `POST /internal/intake/classify`, displays summary
+  cards, detected OEM/model/year, role coverage, per-file classification table,
+  and diagnostics inline on the page
+- **View Full Report** — calls `POST /internal/intake/report`, opens the
+  portable HTML intake report in a new browser tab
+- Advisory/OEM ownership banner on every view
+
+No files are stored. No authentication required. Local/internal use only.
+No React, no CDN, no build system — vanilla HTML/CSS/JS only.
+
 ### Intake API endpoints
 
 ```bash
 # Start the server
 uvicorn repairgraph.api.app:app --reload
+
+# Browser upload page
+open http://localhost:8000/internal/intake
 
 # Classify a packet (returns JSON manifest)
 curl -F "files=@procedure.txt" -F "files=@welding.txt" \
@@ -507,7 +538,7 @@ curl -F "files=@procedure.txt" -F "files=@welding.txt" \
      http://localhost:8000/internal/intake/report
 ```
 
-Both endpoints accept multipart file uploads. No files are retained after
+All endpoints accept multipart file uploads. No files are retained after
 the response.
 
 ### Document roles

@@ -23,6 +23,7 @@ from fastapi.responses import HTMLResponse
 from repairgraph.intake.classify import classify_intake_packet, summarize_intake_manifest
 from repairgraph.intake.report import build_intake_html_report
 from repairgraph.intake.schema import IntakeManifest
+from repairgraph.intake.upload_page import build_intake_upload_page
 
 router = APIRouter(prefix="/internal/intake", tags=["intake"])
 
@@ -103,6 +104,21 @@ async def _process_uploads(files: list[UploadFile]) -> IntakeManifest:
             tmp_path.write_bytes(content)
             tmp_paths.append(tmp_path)
         return classify_intake_packet(tmp_paths)
+
+
+@router.get(
+    "",
+    summary="OEM repair packet intake upload page",
+    response_class=HTMLResponse,
+)
+async def get_intake_page() -> HTMLResponse:
+    """Return the self-contained HTML upload page for OEM repair packet intake.
+
+    The page includes a file picker, drag-and-drop zone, and results area.
+    It uses fetch() to call POST /internal/intake/classify and /report.
+    No files are retained. Local/internal use only.
+    """
+    return HTMLResponse(content=build_intake_upload_page(), status_code=200)
 
 
 @router.post("/classify", summary="Classify an OEM repair packet")
