@@ -24,7 +24,7 @@ from repairgraph.state.demo import (
 from repairgraph.state.html_report import build_replay_html_report, build_workflow_html_report
 from repairgraph.state.replay import replay_repair_state
 
-_OUTPUT_DIR = Path(__file__).resolve().parents[4] / "data" / "extracted" / "state"
+_OUTPUT_DIR = Path("data/extracted/state")
 
 WORKFLOW_FILENAME = "accord_workflow_report.html"
 REPLAY_FILENAME = "accord_replay_report.html"
