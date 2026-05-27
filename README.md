@@ -288,7 +288,60 @@ written on any request.
 > internal demo endpoints — not a production API surface. No authentication is
 > required. No repair certification or OEM compliance is implied.
 
-### Advisory caveat
+### Workflow Visualization + Replay
+
+RepairGraph now includes workflow visualization, state replay, and introspection
+tooling for operational inspection and debugging.
+
+#### Visualization CLI
+
+```bash
+python -m repairgraph.state.visualization_cli
+```
+
+Generates the projected Accord state and exports:
+
+| File | Contents |
+|---|---|
+| `data/extracted/state/accord_workflow_visualization.json` | Combined introspection payload (JSON) |
+| `data/extracted/state/accord_timeline.mmd` | Event sequence diagram (Mermaid) |
+| `data/extracted/state/accord_phase_flow.mmd` | Phase progression flowchart (Mermaid) |
+| `data/extracted/state/accord_blocker_flow.mmd` | Blocker graph (Mermaid) |
+| `data/extracted/state/accord_zone_activation.mmd` | Zone activation states (Mermaid) |
+
+Prints a concise summary: event count, open blockers, active phases, next actions.
+
+#### Visualization endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /internal/state/accord/timeline` | Ordered event, phase, and action timelines |
+| `GET /internal/state/accord/replay` | Event-by-event state replay with diffs |
+| `GET /internal/state/accord/visualization` | Combined visualization payload with Mermaid diagrams |
+
+The replay endpoint returns ordered snapshots — one per event applied — with
+a lightweight state summary and change diff at each step. The visualization
+endpoint returns the full introspection payload including all four Mermaid diagrams.
+
+#### Mermaid outputs
+
+- `accord_timeline.mmd` — `sequenceDiagram` showing which actor applied each
+  event and to which target, with timestamps
+- `accord_phase_flow.mmd` — `flowchart LR` showing all repair phases in sequence
+  with status-coded colour
+- `accord_blocker_flow.mmd` — `flowchart TD` showing each blocker node and what
+  it blocks; open blockers in red, resolved in green
+- `accord_zone_activation.mmd` — `flowchart LR` showing repair zones coloured by
+  activation state (active=amber, complete=green, blocked=red, inactive=grey)
+
+#### Replay and introspection
+
+`replay_repair_state(initial_state, events)` projects state incrementally and
+returns one `RepairState` snapshot per event applied. `build_state_diff` compares
+two snapshots and returns a structured dict of changed statuses. Both are
+deterministic, side-effect free, and suitable for operational debugging.
+
+#### Advisory caveat
 
 All repair state outputs are **advisory workflow projections** derived from
 RepairGraph procedure data and explicit state events. They do not certify repair
