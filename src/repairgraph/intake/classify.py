@@ -242,41 +242,193 @@ _ROLE_KEYWORD_SETS: dict[str, list[str]] = {
         r"\bremoval\b", r"\binstallation\b", r"\breplacement procedure\b",
         r"\brepair procedure\b", r"\bdisassembly\b", r"\breassembly\b",
         r"\bstep \d+\b", r"\bprocedure\b",
+        r"\bremove and install\b", r"\bremove and replace\b",
+        r"\bremoval and replacement\b", r"\bremoval and installation\b",
+        r"\bservice and repair\b", r"\bdrilling\b", r"\bdisconnect\b",
+        r"\breinstall\b", r"\btorque spec\b",
     ],
     "sectioning": [
         r"\bsection cut\b", r"\bsectioning\b", r"\bpanel sectioning\b",
         r"\bbutt joint\b", r"\blap joint\b", r"\bcut line\b", r"\boverlap\b",
+        r"\bsection location\b", r"\bno cut zone\b", r"\bsplice\b",
+        r"\btransition area\b", r"\bpartial replacement\b",
     ],
     "welding": [
         r"\bweld\b", r"\bwelding\b", r"\bmig\b", r"\bmag\b",
         r"\bspot weld\b", r"\bweld point\b", r"\bweld nugget\b",
         r"\bplug weld\b", r"\bbraz[ei]\b", r"\bresistance spot\b",
+        r"\bweld diagram\b", r"\bweld schedule\b", r"\bweld flange\b",
+        r"\bsrsw\b", r"\bnumber of weld\b", r"\bheat affected zone\b",
     ],
     "corrosion_protection": [
         r"\bcorrosion\b", r"\banti-corrosion\b", r"\brust prevention\b",
         r"\bsealer\b", r"\bprimer\b", r"\bcavity wax\b", r"\bzinc\b",
         r"\bgalvaniz\b",
+        r"\brust preventative\b", r"\bbody sealant\b", r"\bunderbody\b",
+        r"\bseam sealer\b", r"\belectrocoat\b", r"\bcorrosion protection\b",
     ],
     "materials": [
         r"\bmaterial\b", r"\btensile strength\b", r"\buhss\b", r"\bhss\b",
         r"\bhigh strength steel\b", r"\bmpa\b", r"\byield strength\b",
         r"\bmild steel\b", r"\baluminum alloy\b", r"\bbake hardening\b",
+        r"\bsteel grade\b", r"\bahss\b", r"\bdual.phase\b",
+        r"\bboron steel\b", r"\bmaterial specification\b",
+        r"\bultra.high.strength\b",
     ],
     "dimensions": [
         r"\bdimension\b", r"\bmeasurement\b", r"\btolerance\b",
         r"\bgap\b", r"\bclearance\b", r"\b\d+\.?\d*\s*mm\b",
         r"\bspecification\b", r"\bpanel gap\b",
+        r"\bbody line\b", r"\bflush\b", r"\breference point\b", r"\bdatum\b",
     ],
     "calibration": [
         r"\bcalibration\b", r"\badas\b", r"\bcamera calibration\b",
         r"\bsensor\b", r"\bradar\b", r"\blidar\b", r"\balignment\b",
         r"\brecalibration\b",
+        r"\btarget alignment\b", r"\bstatic calibration\b",
+        r"\bdynamic calibration\b", r"\blane keep\b", r"\blane departure\b",
+        r"\bblind spot\b",
     ],
     "precautions": [
         r"\bprecaution\b", r"\bwarning\b", r"\bcaution\b",
         r"\bdanger\b", r"\bsafety\b", r"\bdo not\b",
         r"\bwear protective\b", r"\bhazard\b",
+        r"\bsrs\b", r"\bairbag\b", r"\bhigh voltage\b",
+        r"\bbattery disconnect\b", r"\binjury\b",
     ],
+}
+
+# ── Role ontology phrases (3× keyword weight) ─────────────────────────────────
+
+_ROLE_ONTOLOGY_PHRASES: dict[str, list[str]] = {
+    "repair_procedure": [
+        "removal and installation",
+        "removal and replacement",
+        "remove and install",
+        "service and repair",
+        "repair procedure",
+        "removal procedure",
+        "installation procedure",
+        "replacement procedure",
+        "service procedure",
+    ],
+    "sectioning": [
+        "section cut",
+        "section location",
+        "sectioning location",
+        "no cut zone",
+        "cut location",
+        "partial replacement",
+        "replacement section",
+        "splice location",
+        "butt weld joint",
+    ],
+    "welding": [
+        "weld points",
+        "weld diagram",
+        "spot weld",
+        "plug weld",
+        "mig welding",
+        "mag welding",
+        "resistance spot welding",
+        "heat affected zone",
+        "weld flange",
+        "number of weld",
+    ],
+    "corrosion_protection": [
+        "corrosion protection",
+        "rust preventative",
+        "body sealant",
+        "anti-corrosion",
+        "cavity wax",
+        "underbody coating",
+        "seam sealer",
+        "rust treatment",
+        "electrocoat primer",
+    ],
+    "materials": [
+        "tensile strength",
+        "material specification",
+        "steel grade",
+        "high strength steel",
+        "ultra high strength steel",
+        "yield strength",
+        "advanced high strength",
+        "dual phase steel",
+        "boron steel",
+    ],
+    "dimensions": [
+        "panel gap",
+        "gap specification",
+        "body dimensions",
+        "gap and flush",
+        "reference point",
+        "measurement specification",
+        "tolerance specification",
+    ],
+    "calibration": [
+        "adas calibration",
+        "radar calibration",
+        "camera calibration",
+        "sensor calibration",
+        "static calibration",
+        "dynamic calibration",
+        "lane departure",
+        "blind spot monitor",
+        "adaptive cruise",
+        "forward collision",
+    ],
+    "precautions": [
+        "safety precautions",
+        "airbag precaution",
+        "srs system",
+        "high voltage battery",
+        "battery disconnect",
+        "personal protection",
+        "hazardous material",
+        "injury risk",
+    ],
+}
+
+# ── Breadcrumb navigation parsing ─────────────────────────────────────────────
+
+_BREADCRUMB_SEPARATOR_RE = re.compile(r"\s*(?:>|»|→|/|::)\s*")
+
+_BREADCRUMB_ROLE_MAP: dict[str, str] = {
+    "removal and replacement": "repair_procedure",
+    "removal and installation": "repair_procedure",
+    "remove and install": "repair_procedure",
+    "r&i": "repair_procedure",
+    # "service and repair" intentionally omitted — it is a category folder
+    # in ALLDATA navigation, not a specific document type. Specific document
+    # types (weld points, removal and replacement, etc.) are more reliable signals.
+    "repair procedure": "repair_procedure",
+    "replacement procedure": "repair_procedure",
+    "removal procedure": "repair_procedure",
+    "weld points": "welding",
+    "weld diagram": "welding",
+    "welding procedure": "welding",
+    "mig welding": "welding",
+    "resistance spot welding": "welding",
+    "sectioning": "sectioning",
+    "section location": "sectioning",
+    "sectioning procedure": "sectioning",
+    "cut location": "sectioning",
+    "corrosion protection": "corrosion_protection",
+    "anti-corrosion": "corrosion_protection",
+    "rust preventative": "corrosion_protection",
+    "body sealant": "corrosion_protection",
+    "seam sealer": "corrosion_protection",
+    "material specification": "materials",
+    "steel grade": "materials",
+    "tensile strength": "materials",
+    "panel gap": "dimensions",
+    "body dimensions": "dimensions",
+    "calibration": "calibration",
+    "adas calibration": "calibration",
+    "sensor calibration": "calibration",
+    "precaution": "precautions",
+    "safety precautions": "precautions",
 }
 
 # ── Filename parsing helpers ───────────────────────────────────────────────────
@@ -459,32 +611,132 @@ def _read_file_text(path: Path) -> tuple[str, list[str], list[str]]:
 
 # ── Role and metadata detection ────────────────────────────────────────────────
 
-def detect_document_role(text: str) -> str:
-    """Detect document role from text content using keyword heuristics.
+def detect_breadcrumbs(text: str) -> list[str]:
+    """Extract breadcrumb navigation segments from document text.
 
-    Returns one of the DOCUMENT_ROLES strings. Returns "unknown" when no
-    signal is found. Does not guarantee accuracy — outputs require human review.
+    Breadcrumbs are navigation paths such as:
+    "Elantra > Body and Frame > Quarter Panel > Service and Repair > Removal and Replacement"
+
+    Only lines with 3 or more separator-joined segments are treated as breadcrumbs.
+    Returns a flat list of unique lowercased segments in first-occurrence order.
+    """
+    seen: dict[str, None] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        parts = _BREADCRUMB_SEPARATOR_RE.split(stripped)
+        if len(parts) >= 3:
+            for p in parts:
+                seg = p.strip().lower()
+                if seg:
+                    seen[seg] = None
+    return list(seen.keys())
+
+
+def detect_document_roles(text: str) -> dict[str, Any]:
+    """Multi-role document classification using keyword, ontology, and breadcrumb signals.
+
+    Scores each role using:
+      1. Keyword patterns from _ROLE_KEYWORD_SETS (1× per hit)
+      2. Ontology phrases from _ROLE_ONTOLOGY_PHRASES (3× each)
+      3. Breadcrumb navigation segments matched via _BREADCRUMB_ROLE_MAP (5× each)
+
+    Returns a dict with:
+      primary_role (str): highest-scoring role, or "unknown"
+      supporting_roles (list[str]): other roles scoring ≥30% of the top score
+      role_scores (dict[str, float]): scores normalised to [0.0, 1.0]
+      role_evidence (list[str]): top phrases that triggered the classification
+
+    Does not guarantee accuracy. Outputs are heuristic estimates.
     """
     if not text or not text.strip():
-        return "unknown"
+        return {
+            "primary_role": "unknown",
+            "supporting_roles": [],
+            "role_scores": {},
+            "role_evidence": [],
+        }
 
     lower = text.lower()
-    role_scores: dict[str, int] = {}
+    raw_scores: dict[str, float] = {}
+    evidence_by_role: dict[str, list[str]] = {r: [] for r in _ROLE_KEYWORD_SETS}
 
+    # 1. Keyword pattern scoring (1× per hit)
     for role, patterns in _ROLE_KEYWORD_SETS.items():
-        score = 0
+        score = 0.0
         for pat in patterns:
             try:
-                score += len(re.findall(pat, lower))
+                hits = len(re.findall(pat, lower))
             except re.error:
-                score += lower.count(pat)
+                hits = lower.count(pat)
+            score += hits
         if score > 0:
-            role_scores[role] = score
+            raw_scores[role] = score
 
-    if not role_scores:
-        return "unknown"
+    # 2. Ontology phrase scoring (3× per matched phrase)
+    for role, phrases in _ROLE_ONTOLOGY_PHRASES.items():
+        for phrase in phrases:
+            if phrase in lower:
+                raw_scores[role] = raw_scores.get(role, 0.0) + 3.0
+                evidence_by_role[role].append(phrase)
 
-    return max(role_scores, key=lambda r: role_scores[r])
+    # 3. Breadcrumb evidence (5× per matched segment)
+    breadcrumbs = detect_breadcrumbs(text)
+    for seg in breadcrumbs:
+        for key, role in _BREADCRUMB_ROLE_MAP.items():
+            if key in seg:
+                raw_scores[role] = raw_scores.get(role, 0.0) + 5.0
+                ev_label = f"[bc] {seg}"
+                if ev_label not in evidence_by_role[role]:
+                    evidence_by_role[role].append(ev_label)
+                break
+
+    if not raw_scores:
+        return {
+            "primary_role": "unknown",
+            "supporting_roles": [],
+            "role_scores": {},
+            "role_evidence": [],
+        }
+
+    max_score = max(raw_scores.values())
+    normalized: dict[str, float] = {
+        role: round(score / max_score, 3)
+        for role, score in raw_scores.items()
+    }
+
+    primary_role = max(raw_scores, key=lambda r: raw_scores[r])
+    threshold = max_score * 0.30
+    supporting_roles = [
+        r for r, s in sorted(raw_scores.items(), key=lambda x: -x[1])
+        if r != primary_role and s >= threshold
+    ]
+
+    all_detected = [primary_role] + supporting_roles
+    evidence: list[str] = []
+    for role in all_detected:
+        for item in evidence_by_role.get(role, [])[:3]:
+            if item not in evidence:
+                evidence.append(item)
+    evidence = evidence[:8]
+
+    return {
+        "primary_role": primary_role,
+        "supporting_roles": supporting_roles,
+        "role_scores": normalized,
+        "role_evidence": evidence,
+    }
+
+
+def detect_document_role(text: str) -> str:
+    """Detect primary document role from text content using keyword heuristics.
+
+    Returns one of the DOCUMENT_ROLES strings. Returns "unknown" when no
+    signal is found. Delegates to detect_document_roles() internally.
+    Does not guarantee accuracy — outputs require human review.
+    """
+    return detect_document_roles(text)["primary_role"]
 
 
 def detect_oem_metadata(text: str) -> dict[str, Any]:
@@ -620,7 +872,13 @@ def classify_intake_file(path: Path) -> IntakeFile:
             errors=errors,
         )
 
-    role = detect_document_role(text)
+    role_result = detect_document_roles(text) if text.strip() else {
+        "primary_role": "unknown",
+        "supporting_roles": [],
+        "role_scores": {},
+        "role_evidence": [],
+    }
+    role = role_result["primary_role"]
     text_meta = detect_oem_metadata(text) if text.strip() else {
         "oem": None, "model": None, "year": None, "operation": None, "confidence": 0.0,
     }
@@ -692,6 +950,9 @@ def classify_intake_file(path: Path) -> IntakeFile:
         detected_year=detected_year,
         detected_operation=detected_operation,
         document_role=role,
+        supporting_roles=role_result["supporting_roles"],
+        role_scores=role_result["role_scores"],
+        role_evidence=role_result["role_evidence"],
         confidence=round(confidence, 3),
         warnings=warnings,
         errors=errors,

@@ -220,10 +220,15 @@ _JS = """\
       var status = (f.errors && f.errors.length) ? badge('sev-error','Error')
                  : (f.warnings && f.warnings.length) ? badge('sev-warning','Warning')
                  : badge('r-ready','OK');
+      var roleCell = badge('', f.document_role || '—');
+      var supporting = (f.supporting_roles || []);
+      if (supporting.length > 0) {
+        roleCell += ' <span style="font-size:10px;color:#778">+ ' + esc(supporting.join(', ')) + '</span>';
+      }
       return [
         '<span class="mono">' + esc(f.filename || '—') + '</span>',
         esc(f.extension || '—'),
-        badge('', f.document_role || '—'),
+        roleCell,
         esc(f.detected_oem || '—'),
         esc(f.detected_model || '—'),
         esc(f.detected_year ? String(f.detected_year) : '—'),

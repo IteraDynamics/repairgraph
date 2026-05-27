@@ -57,6 +57,9 @@ class IntakeFile:
     detected_year: int | None = None
     detected_operation: str | None = None
     document_role: str = "unknown"
+    supporting_roles: list[str] = field(default_factory=list)
+    role_scores: dict[str, float] = field(default_factory=dict)
+    role_evidence: list[str] = field(default_factory=list)
     confidence: float = 0.0
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)

@@ -1,0 +1,24 @@
+Elantra > Body and Frame > Quarter Panel > Service and Repair > Weld Points
+
+WELD POINTS — REAR QUARTER PANEL
+Hyundai Elantra 2023
+
+WELDING SPECIFICATIONS
+Number of weld points: 42 resistance spot welds
+MIG plug welds: 8 locations
+Weld diagram reference: Hyundai sheet QP-2023-EL
+
+RESISTANCE SPOT WELDING (SRSW) LOCATIONS
+Rear roof rail flange:      12 weld nuggets at 30mm pitch
+D-pillar inner:             10 weld nuggets at 25mm pitch
+Quarter inner reinforcement: 20 weld nuggets at 28mm pitch
+
+PLUG WELD LOCATIONS
+Rocker flange:  8 holes, 8mm diameter, per weld schedule
+
+WELD PREPARATION
+Weld flange preparation: Remove zinc coating in weld zone before welding.
+Heat affected zone: Apply anti-corrosion primer after all welding operations.
+
+Hyundai specifies MIG welding for all external flange positions.
+Spot weld diameter: minimum 4mm nugget per Hyundai weld specification.

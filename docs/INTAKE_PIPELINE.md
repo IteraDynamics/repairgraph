@@ -37,7 +37,7 @@ build_intake_html_report()      — portable HTML report
 | Module | Purpose |
 |---|---|
 | `intake/schema.py` | Dataclasses: IntakeFile, IntakeManifest, IntakePacket, IntakeDiagnostic, etc. |
-| `intake/classify.py` | File classification, OEM detection, packet assembly |
+| `intake/classify.py` | File classification, OEM detection, packet assembly, breadcrumb parsing, multi-role detection |
 | `intake/diagnostics.py` | Completeness validation, missing role reports, diagnostic structuring |
 | `intake/report.py` | Self-contained HTML report generation |
 | `intake/cli.py` | CLI: ingest files, write manifest JSON + HTML report |
@@ -138,22 +138,50 @@ replacement, sectioning, frame repair, etc.
 
 ### Document role detection
 
-Files are scored against eight keyword sets:
+Files are scored against eight role categories:
 `repair_procedure`, `sectioning`, `welding`, `corrosion_protection`,
 `materials`, `dimensions`, `calibration`, `precautions`.
 
-The role with the highest keyword match score is assigned. Documents
-with no matching keywords receive the role `unknown`.
+Role scoring uses three evidence channels:
+
+**Keyword patterns (1× weight):** Each role has an expanded set of
+keyword patterns matched against the lowercased document text.
+
+**Ontology phrases (3× weight):** Compound phrases strongly associated
+with a specific role (e.g., `"removal and replacement"`, `"weld points"`,
+`"corrosion protection"`, `"material specification"`). These are matched as
+exact substrings and carry three times the weight of a keyword hit.
+
+**Breadcrumb navigation (5× weight):** ALLDATA and similar repair
+information systems embed navigation breadcrumbs in documents, such as:
+```
+Elantra > Body and Frame > Quarter Panel > Service and Repair > Weld Points
+```
+The `detect_breadcrumbs()` function extracts segments from lines with 3+
+separator-joined parts. Specific document-type segments (e.g., "weld points",
+"removal and replacement", "corrosion protection") are matched against
+`_BREADCRUMB_ROLE_MAP` and contribute the strongest per-hit signal.
+
+**Primary and supporting roles:** Each file receives a `primary_role`
+(highest-scoring role) and a `supporting_roles` list of other roles that
+score at least 30% of the top score. A repair procedure that also references
+weld specifications would have `repair_procedure` as primary and `welding`
+as a supporting role. Supporting roles are recorded on `IntakeFile` but do
+not affect packet-level `detected_roles` (which reflects primary roles only).
+
+**Role evidence:** `role_evidence` on `IntakeFile` records the top phrases
+(ontology matches, breadcrumb segments) that triggered the classification.
+This provides an explainability trail for human review.
 
 **Limitations of heuristics:**
 
-- A document can genuinely match multiple roles (e.g., a repair procedure
-  with extensive gap specs may score high on both `repair_procedure` and
-  `dimensions`). The classifier assigns the top-scoring role.
 - Unusual formatting, non-English text, or heavily abbreviated content
   may not trigger the expected keywords.
 - PDF classification uses raw byte extraction, which is unreliable for
   scanned or image-only PDFs.
+- Breadcrumb parsing requires separator characters (`>`, `»`, `→`, `/`, `::`)
+  and at least 3 segments per line. Documents without structural navigation
+  rely on keyword and ontology scoring only.
 
 ---
 

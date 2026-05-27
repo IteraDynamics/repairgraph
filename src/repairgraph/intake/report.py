@@ -269,10 +269,17 @@ def build_intake_html_report(manifest: IntakeManifest) -> str:
                 status = _badge("sev-warning", "Warning")
             else:
                 status = _badge("r-ready", "OK")
+            role_cell = _badge(f"r-{f.document_role}", f.document_role)
+            if f.supporting_roles:
+                supporting_html = " ".join(
+                    f'<span style="font-size:10px;color:#778;margin-left:3px">{_h(r)}</span>'
+                    for r in f.supporting_roles
+                )
+                role_cell += f' <span style="font-size:10px;color:#aaa">+</span> {supporting_html}'
             rows.append([
                 f'<span class="mono">{_h(f.filename)}</span>',
                 _h(f.extension or "—"),
-                _badge(f"r-{f.document_role}", f.document_role),
+                role_cell,
                 _h(f.detected_oem or "—"),
                 _h(f.detected_model or "—"),
                 _h(str(f.detected_year) if f.detected_year else "—"),

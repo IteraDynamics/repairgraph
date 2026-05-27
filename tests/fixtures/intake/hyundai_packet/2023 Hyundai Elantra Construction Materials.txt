@@ -1,0 +1,25 @@
+Elantra > Body and Frame > Construction > Material Specification
+
+CONSTRUCTION MATERIALS — REAR QUARTER PANEL
+Hyundai Elantra 2023
+
+MATERIAL SPECIFICATIONS
+Quarter panel outer skin:      High Strength Steel (HSS) 270 MPa tensile strength
+Quarter inner reinforcement:   Mild steel 270 MPa yield strength
+D-pillar inner:                Ultra High Strength Steel (UHSS) 980 MPa tensile strength
+Roof rail reinforcement:       Advanced High Strength Steel (AHSS) 590 MPa
+
+STEEL GRADES BY COMPONENT
+Component                | Material Type | Tensile Strength | Steel Grade
+Quarter panel outer      | HSS           | 270 MPa          | CR270
+Quarter inner            | Mild steel    | 270 MPa          | CR270
+D-pillar inner           | UHSS          | 980 MPa          | CR980
+Roof rail                | AHSS          | 590 MPa          | CR590
+
+MATERIAL HANDLING NOTES
+Do not apply heat above 150 degrees C to UHSS components.
+Bake hardening steel properties may be altered by excessive heat.
+Dual-phase steel requires specific weld schedule per material specification.
+Boron steel components must not be sectioned outside approved cut locations.
+
+Hyundai material specifications are subject to model-year revision.
