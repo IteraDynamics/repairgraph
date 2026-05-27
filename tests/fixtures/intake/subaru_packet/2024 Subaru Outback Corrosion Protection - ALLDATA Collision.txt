@@ -1,0 +1,41 @@
+2024 SUBARU OUTBACK CORROSION PROTECTION REQUIREMENTS
+ALLDATA Collision Repair Procedures
+
+Vehicle: 2024 Subaru Outback
+Document Type: Corrosion Protection and Anti-Corrosion Treatment
+
+CORROSION PROTECTION OVERVIEW
+Subaru Corporation requires full corrosion protection restoration after any
+collision repair affecting the 2024 Subaru Outback body structure. Failure
+to restore corrosion protection may void Subaru corrosion warranty coverage.
+
+SEALER APPLICATION
+Apply weld-through primer to all bare metal flanges before welding per
+Subaru anti-corrosion specification. Apply cavity wax injection to all enclosed
+body cavities accessible after panel installation.
+
+CAVITY WAX REQUIREMENTS
+All enclosed cavities in the rear quarter panel area of the 2024 Subaru Outback
+require cavity wax injection per Subaru cavity wax application procedure.
+Use Subaru-approved cavity wax product or equivalent meeting Subaru specification.
+
+ZINC PRIMER AND ANTI-CORROSION SEALER
+1. Apply zinc-rich primer to bare metal at all weld flanges.
+2. Apply seam sealer per Subaru seam sealer application diagram.
+3. Apply anti-corrosion sealer to all joint areas per Subaru specification.
+4. Apply cavity wax per Subaru cavity wax access hole locations.
+
+PAINT AND REFINISH
+Apply anti-corrosion primer coat before applying color coats. Use Subaru-approved
+refinish materials. Refer to Subaru paint code and color match specification.
+
+GALVANIZING NOTE
+The 2024 Subaru Outback uses galvanized steel in multiple panel zones. Remove
+galvanized coating from weld areas only. Re-apply zinc primer immediately
+after weld completion. Subaru anti-corrosion requirements prohibit leaving
+bare metal exposed.
+
+FINAL INSPECTION
+Verify corrosion protection is complete per Subaru inspection checklist.
+All sealer applications must be fully cured before closing any panel.
+Apply final cavity wax per Subaru documented access locations.

@@ -1,0 +1,45 @@
+2024 SUBARU OUTBACK REAR QUARTER PANEL REPLACEMENT
+ALLDATA Collision Repair Procedures
+
+Vehicle: 2024 Subaru Outback 2.5i Premium AWD
+Operation: Rear Side Outer Panel / Quarter Panel Replacement
+Document Type: Repair Procedure
+System Note: ALLDATA Collision repair information system serves multiple OEM platforms
+including Toyota, Honda, Volkswagen, and others. Verify this procedure applies to
+your specific vehicle before beginning repair.
+
+DESCRIPTION
+The 2024 Subaru Outback uses high-strength steel panels in the rear quarter area.
+This procedure covers removal and installation of the rear side outer panel on
+the 2024 Subaru Outback. Follow all steps in order.
+
+REQUIRED TOOLS
+- MIG welder rated for Subaru-approved wire specification
+- Panel removal tools
+- Spot weld drill bit
+- Body hammer set
+
+PREPARATION
+Verify vehicle identification: 2024 Subaru Outback. Review all applicable Subaru
+technical service bulletins before beginning. Subaru Corporation specifies the
+following panel attachment method for the Outback rear quarter panel.
+
+REMOVAL PROCEDURE
+Step 1. Disconnect the negative battery terminal.
+Step 2. Remove all trim panels adjacent to the rear quarter panel area.
+Step 3. Drill out factory spot welds per Subaru weld location diagram.
+Step 4. Remove the rear side outer panel from the vehicle.
+Step 5. Clean all flanges to bare metal per Subaru anti-corrosion requirements.
+
+INSTALLATION PROCEDURE
+Step 6. Prepare replacement panel per Subaru panel preparation guidelines.
+Step 7. Apply anti-corrosion primer to all bare metal areas.
+Step 8. Position new panel. Verify fit per 2024 Subaru Outback gap specifications.
+Step 9. Weld panel per Subaru joining method specification.
+Step 10. Apply sealer per Subaru corrosion protection requirements.
+Step 11. Apply final corrosion protection and refinish per Subaru paint specification.
+
+POST-INSTALLATION
+Verify panel alignment meets 2024 Subaru Outback factory gap and flush specifications.
+Inspect all weld locations for completeness per Subaru quality standards.
+Apply cavity wax per Subaru corrosion protection requirements.

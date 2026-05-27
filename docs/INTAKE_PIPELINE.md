@@ -45,6 +45,61 @@ build_intake_html_report()      — portable HTML report
 
 ---
 
+## Real-world metadata detection hardening
+
+### Two-channel evidence model
+
+The intake classifier uses two evidence channels for OEM, model, year, and
+operation detection:
+
+**Filename evidence (high-signal):** OEM, model, year, and operation are
+extracted directly from filename tokens. Filenames like
+`"2024 Subaru Outback Quarter Panel Replacement.pdf"` carry explicit vehicle
+identity and are treated as the strongest available signal. Filename evidence
+is not subject to the isolation penalty applied to body text.
+
+**Text evidence (lower-signal):** OEM/model/year extracted from document body
+text. Text from noisy sources (scanned PDFs, repair info systems with boilerplate)
+may contain unrelated OEM mentions. The classifier applies an isolation penalty
+to single-or-double OEM mentions in documents longer than 1000 characters.
+
+**Merge rules:**
+- Filename OEM/year/model takes priority when present
+- When filename and text agree: confidence is boosted
+- When filename and text disagree: filename wins, a `FILENAME_TEXT_DISAGREEMENT`
+  diagnostic is generated with both evidence values
+- When only text has metadata: text result used with text-derived confidence
+
+### Isolation penalty for weak OEM mentions
+
+An OEM detected only 1–2 times in a document longer than 1000 characters
+receives a score reduction of 60%. This prevents a single incidental OEM
+mention (e.g., in boilerplate listing "compatible OEMs: Toyota, Volkswagen,
+Honda…") from dominating the classification result.
+
+This penalty does not apply to short texts or to OEMs with 3+ hits.
+It does not apply to filename tokens.
+
+### Packet-level filename voting
+
+At the packet level (multiple files):
+
+- Filename OEM is extracted for each readable file
+- If ≥50% of readable files agree on the same filename OEM, that OEM is
+  selected as the packet OEM with high confidence (0.55–0.85 based on
+  agreement ratio)
+- If no filename majority exists, a combined weighted vote is used
+- When filename evidence determines the OEM, an `OEM_DETECTED_BY_FILENAME`
+  info diagnostic explains the evidence source
+
+### Canonical model names
+
+Model detection now returns canonical display names (e.g., "Outback",
+"Camry", "F-150", "CR-V") rather than raw regex pattern strings. All
+16 supported OEMs have canonical name mappings.
+
+---
+
 ## Classification heuristics
 
 The intake classifier uses keyword pattern matching only. It does not call
@@ -52,9 +107,10 @@ any external AI service, OCR library, or ML model.
 
 ### OEM detection
 
-OEM patterns are searched in the full text of each file. The OEM with the
-highest weighted keyword hit count wins. Confidence is proportional to hit
-count but capped at 0.85 (no classification is treated as certain).
+OEM patterns are searched in the full text of each file with isolation penalty
+for weak isolated mentions (see above). The OEM with the highest weighted
+keyword hit count wins. Confidence is proportional to hit count but capped
+at 0.85. Filename evidence is merged separately and takes priority.
 
 Supported OEMs (heuristic, not exhaustive):
 Honda, Toyota, Ford, GM (Chevrolet/GMC/Buick/Cadillac), Nissan, Subaru,
@@ -64,12 +120,15 @@ Hyundai/Kia, Mazda, Mitsubishi, Volvo, Rivian, Tesla.
 ### Model detection
 
 Model patterns are searched within the detected OEM's model list first,
-then across all OEMs if no OEM was detected.
+then across all OEMs if no OEM was detected. Returns canonical model name
+(e.g., "Outback", not the raw pattern). Filename model takes priority
+over text model when both are detected.
 
 ### Year detection
 
-Four-digit years in the range 1980–2039 are matched. The most frequently
-occurring plausible year wins.
+Four-digit years in the range 1980–2039 are matched. Filename year takes
+priority at both per-file and packet level. Text year is the most frequently
+occurring plausible year.
 
 ### Operation detection
 
@@ -164,6 +223,12 @@ pipeline. RepairGraph uses diagnostics to communicate:
 | `OEM_CONFLICT` | Multiple different OEMs detected across files |
 | `YEAR_NOT_DETECTED` | Model year could not be detected |
 | `UNSUPPORTED_FORMATS` | Files with unsupported extensions supplied |
+| `OEM_DETECTED_BY_FILENAME` | OEM determined from filename evidence (majority of files agree) |
+| `FILENAME_TEXT_DISAGREEMENT` | Filename OEM/year conflicts with extracted text OEM/year |
+| `WEAK_METADATA_CONFIDENCE` | Packet OEM confidence below 40% |
+| `NO_STRONG_PACKET_CONSENSUS` | No single OEM achieved majority across files |
+| `YEAR_CONFLICT` | Filename year differs from predominant document text year |
+| `MODEL_CONFLICT` | Multiple model signals detected across files |
 
 ---
 

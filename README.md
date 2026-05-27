@@ -441,6 +441,14 @@ not OCR or AI services. All outputs carry explicit confidence scores and
 uncertainty signals. RepairGraph explains what it found, what it missed,
 and what it cannot yet classify.
 
+Metadata detection uses two evidence channels: **filename evidence** (high-signal
+— OEM/model/year extracted from the filename itself) and **text evidence**
+(from document body, with isolation penalty for weak isolated OEM mentions in
+noisy long documents). Filename evidence takes priority. Packet-level OEM is
+determined by filename consensus when the majority of files agree. Conflicts
+between filename and text evidence generate `FILENAME_TEXT_DISAGREEMENT`
+diagnostics. See `docs/INTAKE_PIPELINE.md` for the full hardening design.
+
 ### Supported input formats
 
 - `.txt` — full confidence, primary format

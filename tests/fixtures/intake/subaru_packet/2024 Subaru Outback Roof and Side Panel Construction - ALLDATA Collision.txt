@@ -1,0 +1,41 @@
+2024 SUBARU OUTBACK ROOF AND SIDE PANEL CONSTRUCTION/MATERIALS
+ALLDATA Collision Repair Procedures
+
+Vehicle: 2024 Subaru Outback
+Document Type: Construction and Material Classification
+
+PANEL MATERIAL CLASSIFICATION
+The 2024 Subaru Outback uses a multi-material body structure. The following
+material classifications apply to roof and side panel areas.
+
+MATERIAL SPECIFICATIONS
+Rear Side Outer Panel: High-Strength Steel (HSS) 440-590 MPa tensile strength
+Roof Panel: Mild Steel, 270 MPa
+Center Pillar Reinforcement: Ultra-High-Strength Steel (UHSS) 980 MPa and above
+Rear Wheel Arch: HSS 440 MPa
+
+UHSS HANDLING RESTRICTIONS
+Components rated above 980 MPa tensile strength in the 2024 Subaru Outback must
+not be subjected to heat-based straightening. UHSS components require replacement
+only. Subaru Corporation prohibits sectioning of UHSS-designated structural members.
+
+MIG BRAZING REQUIREMENTS
+Adjacent joins to UHSS components on the Subaru Outback require MIG brazing
+per Subaru joining method specification. Resistance spot welding is prohibited
+at UHSS flanges. Refer to Subaru weld map for approved locations.
+
+MATERIAL HANDLING NOTES
+Store aluminum-containing components per Subaru handling procedure to prevent
+galvanic corrosion. 2024 Subaru Outback aluminum alloy components require
+dedicated tooling to prevent cross-contamination with steel dust.
+
+YIELD STRENGTH REFERENCE TABLE
+Panel Zone                   Material Class   Tensile (MPa)
+Rear Side Outer Panel        HSS              440-590
+Rear Pillar Outer            UHSS             980+
+Side Sill Reinforcement      UHSS             1180
+Roof Panel                   Mild             270
+Rear Floor Panel             HSS              440
+
+All material classifications are for the 2024 Subaru Outback unless otherwise noted.
+Verify against current Subaru technical service documentation before repair.

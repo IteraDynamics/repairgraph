@@ -1,0 +1,19 @@
+TOYOTA CAMRY REAR QUARTER PANEL REPLACEMENT
+Toyota Motor Corporation Collision Repair
+
+Vehicle: 2023 Toyota Camry
+Operation: Rear Side Outer Panel Replacement
+
+This document covers Toyota Camry rear quarter panel replacement procedure.
+Toyota specifies removal and installation sequence for the Camry rear panel.
+
+REMOVAL PROCEDURE
+Step 1. Disconnect battery per Toyota service procedure.
+Step 2. Remove Toyota Camry interior trim panels.
+Step 3. Drill spot welds per Toyota Camry weld diagram.
+Step 4. Remove outer panel.
+
+INSTALLATION
+Install replacement panel per Toyota joining method specification.
+Apply anti-corrosion sealer per Toyota corrosion protection requirements.
+Verify gaps per Toyota Camry 2023 specification.
