@@ -462,6 +462,9 @@ All core state workflow modules are implemented.
 | `cli.py` | implemented |
 | `ar_payload.py` | implemented |
 | `ar_cli.py` | implemented |
+| `demo.py` | implemented |
+| `api/app.py` | implemented |
+| `api/state_routes.py` | implemented |
 
 Tests implemented:
 
@@ -477,6 +480,38 @@ Tests implemented:
 | `tests/test_state_cli.py` | implemented |
 | `tests/test_state_ar_payload.py` | implemented |
 | `tests/test_state_ar_cli.py` | implemented |
+| `tests/test_state_api.py` | implemented |
+
+## API delivery
+
+State workflow and AR payload intelligence is also available through a local
+FastAPI application. Endpoints are deterministic and serve the same outputs as
+the CLI tools, without writing any files.
+
+**Modules:**
+
+- `repairgraph.api.app` — FastAPI application
+- `repairgraph.api.state_routes` — Internal state router (`/internal/state/accord/*`)
+
+**Endpoints:**
+
+| Endpoint | Response |
+|---|---|
+| `GET /internal/state/accord/initial` | Initial Accord RepairState (no events applied) |
+| `GET /internal/state/accord/projected` | Projected state after deterministic demo event ledger |
+| `GET /internal/state/accord/ar-payload` | AR workflow payload for projected state |
+| `GET /internal/state/accord/summary` | Compact summary: session, counts, blockers, next actions |
+
+All responses are generated from the same `state/demo.py` helper functions used
+by the CLI tools. No files are written on any request.
+
+**Response schemas:**
+
+- `/initial` and `/projected`: `repairgraph.repair_state` v0.1 — same schema as `export_state_to_dict()`
+- `/ar-payload`: `repairgraph.ar_workflow_payload` v0.1 — same schema as `build_ar_workflow_payload()`
+- `/summary`: `repairgraph.repair_state.summary` — compact subset
+
+All responses include `advisory: true` and an `advisory_note` field.
 
 ## CLI usage
 

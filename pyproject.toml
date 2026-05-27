@@ -5,6 +5,8 @@ description = "AI-native procedural intelligence engine for collision repair"
 requires-python = ">=3.11"
 dependencies = [
   "jsonschema>=4.0",
+  "fastapi>=0.100",
+  "httpx>=0.24",
 ]
 
 [project.scripts]
