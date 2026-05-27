@@ -348,6 +348,79 @@ RepairGraph procedure data and explicit state events. They do not certify repair
 completion, OEM compliance, or repair quality. OEM procedure verification and
 qualified technician review are required before acting on any recommendation.
 
+### Interactive Workflow Reports
+
+RepairGraph generates self-contained, portable HTML reports from workflow
+intelligence — openable locally in any browser without a server, framework,
+or external dependencies.
+
+#### Report CLI
+
+```bash
+python -m repairgraph.state.report_cli
+```
+
+Generates the deterministic Accord projected state and exports two HTML reports:
+
+| File | Contents |
+|---|---|
+| `data/extracted/state/accord_workflow_report.html` | Workflow intelligence report with summary cards, timeline, blockers, QA gates, and Mermaid diagrams |
+| `data/extracted/state/accord_replay_report.html` | Interactive replay inspector with step-by-step navigation |
+
+Prints a concise summary: phase count, open blocker count, event count, replay snapshot count.
+
+#### Report endpoint
+
+```bash
+curl http://localhost:8000/internal/state/accord/report
+curl http://localhost:8000/internal/state/accord/report?view=replay
+```
+
+Returns a self-contained HTML response. Supports `?view=workflow` (default) and
+`?view=replay` for the interactive replay inspector. No files are written.
+
+#### Report sections
+
+**Workflow report:**
+
+- Advisory banner
+- Session overview
+- Workflow summary cards (phases, actions, QA gates, blockers, events, next actions)
+- Active and blocked phases
+- Next recommended actions
+- Open blockers
+- Open QA gates
+- Event timeline
+- Phase overview
+- Action details
+- Mermaid diagram sources (workflow timeline, phase flow, blocker flow, zone activation)
+
+**Replay inspector:**
+
+- Session overview
+- Final state summary cards
+- Interactive step navigator (vanilla JS, no frameworks)
+- Per-step view: event details, state summary after event, state diff
+- Replay step summary table
+- Mermaid diagram sources for final projected state
+
+#### Report portability
+
+HTML reports are:
+- Fully self-contained — no CDN, no external scripts, no network access
+- Deterministic — same state always produces the same HTML
+- Portable — open directly in any browser from disk
+- Operational artifacts — not production UIs or dashboards
+
+Mermaid diagram sources are embedded as styled code blocks. Paste any block
+into a Mermaid-compatible tool to render the diagram.
+
+> **Advisory:** All report content is advisory workflow intelligence derived
+> from RepairGraph procedure data and explicit state events. Reports are local,
+> portable artifacts — not certified repair records or OEM-compliance documents.
+> Qualified technician review and OEM procedure verification are required before
+> acting on any workflow recommendation.
+
 ## Running tests
 
 ```bash

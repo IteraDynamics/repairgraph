@@ -266,10 +266,94 @@ flowchart LR
 
 ---
 
+---
+
+## HTML report architecture
+
+`build_workflow_html_report(state) -> str`
+`build_replay_html_report(initial_state, events) -> str`
+`build_visualization_sections(state) -> dict`
+`build_summary_cards(state) -> list[dict]`
+
+HTML reports are self-contained, portable artifacts generated from a `RepairState`
+snapshot. No external dependencies, CDN references, or network access are required.
+Reports open directly in any browser.
+
+### Report sections
+
+**Workflow report** (`build_workflow_html_report`):
+
+| Section | Source |
+|---|---|
+| Header + advisory banner | session metadata + advisory note |
+| Workflow summary cards | `build_summary_cards(state)` |
+| Session overview | `state.session` fields |
+| Active / blocked phases | `state.phases` filtered by status |
+| Next recommended actions | `state.next_recommended_actions` + action map |
+| Open blockers | `get_open_blockers(state)` |
+| Open QA gates | `state.qa_gates` filtered by open status |
+| Event timeline | `build_event_timeline(state)` |
+| Phase overview | `build_phase_timeline(state)` |
+| Action details | `build_action_timeline(state)` |
+| Mermaid diagram sources | `build_visualization_sections(state)` |
+
+**Replay inspector** (`build_replay_html_report`):
+
+| Section | Source |
+|---|---|
+| Session overview | `initial_state.session` |
+| Final state summary cards | `build_summary_cards(snapshots[-1])` |
+| Interactive step navigator | `replay_repair_state(initial, events)` |
+| Replay step summary table | per-step diffs via `build_state_diff` |
+| Mermaid sections | `build_visualization_sections(final_state)` |
+
+### Replay inspector behavior
+
+The replay inspector embeds all replay data as JSON in a `<script>` block and
+uses vanilla JS to power step navigation. No frameworks, no libraries, no
+external resources. Clicking a step chip shows:
+
+- Event details (ID, type, actor, target, timestamp)
+- State summary after the event (session status, phase/action counts, blockers, QA)
+- State diff summary (number of changes, human-readable change descriptions)
+- Next recommended actions at that step
+
+Prev/Next buttons allow sequential stepping through all events.
+
+### Mermaid integration
+
+Mermaid diagram sources are embedded as styled `<pre>` code blocks. This approach:
+- Requires no CDN or external library
+- Is deterministic and portable
+- Allows any Mermaid-compatible tool to render the diagram from the source
+
+`build_visualization_sections(state)` returns a dict with four diagram source strings:
+`workflow_timeline`, `phase_flow`, `blocker_flow`, `zone_activation`.
+
+### Deterministic export behavior
+
+Both report builders are deterministic: identical input state always produces
+identical HTML output. This makes reports reproducible artifacts suitable for
+archival, diffing, and operational reference.
+
+The report CLI (`python -m repairgraph.state.report_cli`) uses the same shared
+`build_accord_projected_state()` builder as all other CLI and API tools, ensuring
+consistent output across all export surfaces.
+
+### Portability philosophy
+
+Reports are designed as local, portable operational artifacts — not production UIs.
+They carry the full workflow intelligence needed to inspect a repair session:
+what happened, what is blocked, what comes next, and how the state evolved.
+A technician, estimator, or inspector can open the report in any browser without
+installing anything.
+
+---
+
 ## Advisory
 
-All workflow visualization and replay outputs are **advisory workflow projections**
-derived from RepairGraph procedure data and explicit state events. They do not
-certify repair completion, OEM compliance, or repair quality. OEM procedure
-verification and qualified technician review are required before acting on any
-recommendation.
+All workflow visualization, replay, and HTML report outputs are **advisory workflow
+projections** derived from RepairGraph procedure data and explicit state events.
+They do not certify repair completion, OEM compliance, or repair quality. OEM
+procedure verification and qualified technician review are required before acting
+on any recommendation.

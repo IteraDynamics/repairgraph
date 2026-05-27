@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
+from fastapi.responses import HTMLResponse
 
 from repairgraph.state.blockers import summarize_blockers
 from repairgraph.state.demo import (
@@ -22,6 +23,7 @@ from repairgraph.state.demo import (
     build_accord_projected_state,
 )
 from repairgraph.state.export_json import ADVISORY_NOTE, export_state_to_dict
+from repairgraph.state.html_report import build_replay_html_report, build_workflow_html_report
 from repairgraph.state.next_actions import summarize_next_actions
 from repairgraph.state.replay import build_state_diff, replay_repair_state, summarize_state_diff
 from repairgraph.state.timeline import (
@@ -166,6 +168,28 @@ def get_accord_visualization() -> dict[str, Any]:
     payload = build_workflow_visualization_payload(state)
     payload["endpoint_advisory"] = _ENDPOINT_ADVISORY
     return payload
+
+
+@router.get(
+    "/accord/report",
+    summary="Interactive HTML workflow report for projected Accord state",
+    response_class=HTMLResponse,
+)
+def get_accord_report(view: str = Query(default="workflow", description="Report view: 'workflow' or 'replay'")) -> HTMLResponse:
+    """Return a self-contained HTML workflow or replay report for the Honda 2025 Accord.
+
+    Generates the deterministic projected Accord state and renders it as a portable
+    HTML document. No files are written. Supports ?view=workflow (default) and
+    ?view=replay for the interactive replay inspector.
+    """
+    if view == "replay":
+        initial = build_accord_initial_state()
+        events = build_accord_demo_events(initial)
+        html_content = build_replay_html_report(initial, events)
+    else:
+        state = build_accord_projected_state()
+        html_content = build_workflow_html_report(state)
+    return HTMLResponse(content=html_content, status_code=200)
 
 
 @router.get("/accord/summary", summary="Compact summary of projected Accord repair state")
