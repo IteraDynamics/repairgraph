@@ -1,0 +1,44 @@
+TOYOTA MOTOR CORPORATION
+Welding and Joining Specifications
+
+2023 TOYOTA CAMRY — Body Structure
+
+WELDING SPECIFICATIONS
+
+RESISTANCE SPOT WELDING
+
+Standard spot weld parameters for mild steel (270 MPa):
+- Nugget diameter: 5.0 mm minimum
+- Electrode force: 2.8 kN
+- Weld current: 9.5 kA
+- Weld time: 200 ms
+
+UHSS panels (980 MPa and above) — special handling required:
+- Do not use resistance spot welding on 1500 MPa UHSS components
+- Use MIG brazing (CuSi3 wire) at adjacent UHSS flanges
+- Braze current: 50-70A, wire feed: 4-6 m/min
+- Minimum braze bead width: 8mm
+
+HIGH STRENGTH STEEL (590-780 MPa):
+- Resistance spot welding permitted
+- Increase electrode force by 10-15%
+- Verify nugget diameter with peel test
+
+PLUG WELD (MAG):
+- Hole diameter: 8mm
+- Weld procedure: fill from bottom, spiral upward
+- Wire: ER70S-6, 0.8mm diameter
+- Shielding gas: 75% Ar / 25% CO2
+- Travel speed: 300-400 mm/min
+
+WELD-THROUGH PRIMER REQUIREMENTS:
+Apply weld-through primer to all bare metal flanges before assembly.
+Approved products: 3M 08008, PPG DP90, TOYOTA PN 08869-02520
+
+MIG BRAZING (for UHSS-adjacent joints):
+Wire type: CuSi3 (silicon bronze)
+Process: MIG brazing only — do not arc weld UHSS zones
+Post-braze: grind flush, apply 2K epoxy primer within 4 hours
+
+WARNING: Welding near high-voltage hybrid/EV components requires
+additional safety precautions. Refer to TOYOTA High Voltage Safety Manual.

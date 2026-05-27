@@ -1,0 +1,65 @@
+FORD MOTOR COMPANY
+Collision Repair Procedures
+
+2022 FORD F-150
+SuperCrew / SuperCab / Regular Cab
+
+REAR QUARTER / BED SIDE OUTER PANEL REPLACEMENT
+
+SECTION: BODY REPAIR — REAR BODY SIDE
+
+GENERAL PRECAUTIONS
+
+WARNING: The 2022 F-150 uses military-grade aluminum alloy body panels
+(6000-series aluminum). Standard steel repair equipment is NOT compatible.
+Use only aluminum-certified repair equipment and tools.
+
+CAUTION: Aluminum dust is a fire and explosion hazard. Ensure adequate
+ventilation and use explosion-proof equipment.
+
+REMOVAL PROCEDURE
+
+1. Preparation
+   a. Place vehicle on frame straightening equipment if structural damage present
+   b. Disconnect negative battery cable
+   c. Depressurize air suspension system if equipped (2022 F-150 PowerBoost models)
+
+2. Trim and Component Removal
+   Remove bed extender (if equipped), tailgate, and all bed accessories.
+   Remove rear combination lamp assemblies (four 8mm bolts each side).
+   Remove wheel arch liner — eight clips and three 8mm bolts.
+
+3. Bed Side Panel Removal
+   NOTE: Aluminum bed side panels are attached using a combination of
+   aluminum rivets and structural adhesive. Do NOT attempt to spot weld
+   aluminum panels without aluminum-capable resistance welding equipment.
+
+   Drill out aluminum rivets using 5/16" cobalt bit (never carbon steel bits).
+   Use heat-resistant adhesive release solvent on bonded flanges.
+   Apply controlled heat (max 120°C) to soften adhesive if required.
+
+INSTALLATION PROCEDURE
+
+4. Panel Preparation
+   Clean all flanges with aluminum-safe cleaner (no iron contamination).
+   Apply self-etching primer approved for aluminum substrate.
+   DO NOT use steel weld-through primer on aluminum panels.
+
+5. Adhesive Application
+   Apply Ford-approved structural adhesive (STA 36960-A or equivalent) to
+   all bonded flange areas. Bead width: 6-8mm continuous bead.
+   Clamp or rivet within working time of adhesive per product instructions.
+
+6. Riveting
+   Install aluminum rivets per factory rivet map.
+   Rivet type: aluminum blind rivet, 5/16" diameter
+   Pitch: 25mm center-to-center at structural flanges
+
+7. Gap and Reveal Verification
+   Verify all panel gaps meet specifications:
+   - Bed side to cab: 8.0mm +/- 2.0mm
+   - Bed side to wheel arch: flush +/- 1.5mm
+
+Advisory: This procedure covers the general body panel replacement process.
+Always refer to Ford's current Workshop Manual for the specific VIN and
+production date of the vehicle being repaired.

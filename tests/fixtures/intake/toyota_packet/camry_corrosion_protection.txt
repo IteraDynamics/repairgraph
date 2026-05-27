@@ -1,0 +1,50 @@
+TOYOTA MOTOR CORPORATION
+Corrosion Protection Requirements
+
+2023 TOYOTA CAMRY
+
+CORROSION PROTECTION AND SEALING
+
+ANTI-CORROSION REQUIREMENTS
+
+All repair operations affecting the body structure must restore the
+factory corrosion protection system to original or better condition.
+
+PRIMER APPLICATION:
+1. Clean all bare metal surfaces with wax and grease remover
+2. Apply zinc phosphate self-etch primer (1-2 mils wet)
+3. Apply 2K epoxy primer within 4 hours of metal preparation
+4. DO NOT allow bare metal to stand more than 2 hours without primer
+
+SEALER APPLICATION:
+Apply urethane sealer (TOYOTA PN 08855-02083 or equivalent) to:
+- All factory seam sealer locations per body sealer drawing
+- Weld joint overlaps and panel flanges
+- All drilled spot weld holes after welding
+
+CAVITY WAX INJECTION:
+After assembly and before paint:
+- Inject cavity wax into all enclosed rocker cavities
+- Inject wax into all door hinge pillar cavities
+- Use TOYOTA-approved cavity wax: PN 08862-00060 or 3M 08881
+
+ANTI-CORROSION TREATMENT ZONES:
+- Inner rocker panels: anti-corrosion wax + sealer
+- Rear lower quarter inner: sealer + cavity wax
+- Floor pan seams: anti-corrosion coating both sides
+- All weld-through primed flanges: re-prime after welding
+
+GALVANIZED STEEL HANDLING:
+The outer quarter panel has galvanized coating. When grinding:
+- Wear respiratory protection (zinc fume hazard)
+- Restore galvanized protection using cold galvanize spray
+- Apply anti-corrosion primer within 1 hour of grinding
+
+RUST PREVENTION:
+Apply rust prevention compound (TOYOTA PN 08887-02230) to:
+- Rear wheel arch inner face
+- All enclosed structural sections
+- Any areas showing bare metal after trimming
+
+NOTE: Failure to restore corrosion protection voids the factory
+anti-corrosion warranty. See TOYOTA Warranty Policies for details.

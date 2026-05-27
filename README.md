@@ -421,6 +421,114 @@ into a Mermaid-compatible tool to render the diagram.
 > Qualified technician review and OEM procedure verification are required before
 > acting on any workflow recommendation.
 
+## Repair Session Intake Pipeline
+
+RepairGraph includes an OEM repair packet intake pipeline that ingests
+unfamiliar repair documents, classifies them by role, detects OEM and
+vehicle metadata, identifies what is present and what is missing, and
+produces intake manifests and diagnostic HTML reports.
+
+**OEM ownership boundary:** RepairGraph processes OEM repair information
+supplied by authorized users/subscribers who have acquired the right to
+use that information. RepairGraph is not an OEM document distribution
+platform and does not redistribute OEM documentation.
+
+### Intake philosophy
+
+The intake pipeline is designed for safety, explainability, and graceful
+degradation — not perfect parsing. It uses lightweight text heuristics,
+not OCR or AI services. All outputs carry explicit confidence scores and
+uncertainty signals. RepairGraph explains what it found, what it missed,
+and what it cannot yet classify.
+
+### Supported input formats
+
+- `.txt` — full confidence, primary format
+- `.pdf` — heuristic byte-extraction, limited confidence; text-format docs preferred
+- `.md`, `.json`, `.csv` — supported
+- Other formats — classified with low confidence and warnings
+
+### Intake CLI
+
+```bash
+python -m repairgraph.intake.cli path/to/repair/packet/
+```
+
+Or with individual files:
+
+```bash
+python -m repairgraph.intake.cli procedure.txt welding_specs.txt corrosion.txt
+```
+
+Terminal summary example:
+
+```
+Files processed:   3
+OEM detected:      Toyota
+Model detected:    camry
+Year detected:     2023
+OEM confidence:    80%
+Roles found:       corrosion_protection, repair_procedure, welding
+Missing roles:     materials
+Readiness:         READY
+```
+
+Outputs written to `data/extracted/intake/`:
+
+| File | Contents |
+|---|---|
+| `intake_manifest.json` | Full intake manifest with per-file classifications and diagnostics |
+| `intake_report.html` | Self-contained HTML intake report |
+
+### Intake HTML report
+
+The HTML report includes:
+- Advisory banner (OEM ownership boundary)
+- Intake summary cards
+- Detected packet metadata (OEM, model, year, operation)
+- Document role coverage (found vs. missing)
+- Per-file classification table with confidence indicators
+- Diagnostics (errors, warnings, info)
+- Missing role report with descriptions
+- Readiness assessment
+
+### Intake API endpoints
+
+```bash
+# Start the server
+uvicorn repairgraph.api.app:app --reload
+
+# Classify a packet (returns JSON manifest)
+curl -F "files=@procedure.txt" -F "files=@welding.txt" \
+     http://localhost:8000/internal/intake/classify
+
+# Generate HTML intake report
+curl -F "files=@procedure.txt" -F "files=@welding.txt" \
+     http://localhost:8000/internal/intake/report
+```
+
+Both endpoints accept multipart file uploads. No files are retained after
+the response.
+
+### Document roles
+
+| Role | Description |
+|---|---|
+| `repair_procedure` | Main removal, installation, and replacement steps |
+| `sectioning` | Panel sectioning guidelines and cut specifications |
+| `welding` | Welding method specifications and technique requirements |
+| `corrosion_protection` | Anti-corrosion treatment and sealer requirements |
+| `materials` | Panel material classifications and handling restrictions |
+| `dimensions` | Gap, clearance, and alignment specifications |
+| `calibration` | ADAS sensor and camera calibration requirements |
+| `precautions` | Safety precautions and hazard warnings |
+| `unknown` | Document role could not be classified |
+
+> **Advisory:** All intake outputs are heuristic estimates. They do not
+> certify document completeness, OEM authenticity, or normalization readiness.
+> RepairGraph processes OEM repair information supplied by authorized users.
+> It is not an OEM document distribution platform.
+
 ## Running tests
 
 ```bash

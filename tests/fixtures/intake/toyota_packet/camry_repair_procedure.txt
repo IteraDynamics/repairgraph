@@ -1,0 +1,67 @@
+TOYOTA MOTOR CORPORATION
+Body Repair Manual
+
+2023 TOYOTA CAMRY
+LE / SE / XLE / XSE
+
+REAR QUARTER PANEL REPLACEMENT PROCEDURE
+
+Section: Body Panel Operations
+
+REMOVAL PROCEDURE
+
+Step 1 — Preparation
+Ensure vehicle is on a level surface. Engage parking brake. Disconnect
+the negative battery terminal.
+
+Step 2 — Interior Removal
+Remove the rear seat cushion, seat back, and quarter trim panel.
+Disconnect any wiring harness clips attached to the inner panel.
+
+Step 3 — Rear Combination Lamp Assembly
+Remove the three 10mm bolts securing the rear combination lamp.
+Disconnect the wiring connector. Remove the lamp assembly.
+
+Step 4 — Rear Bumper Cover
+Remove the clips along the lower edge of the bumper cover.
+Remove the screws behind the rear wheel arch. Pull the bumper
+cover rearward and disconnect any fog lamp connectors.
+
+Step 5 — Quarter Panel Removal
+Using a spot weld drill bit (8mm), drill out all factory spot welds
+along the flange areas. Remove any structural adhesive using a
+utility knife and heat gun at 80°C maximum.
+
+Cut location: rear pillar lower section per panel sectioning
+guidelines. Use TOYOTA-approved sectioning templates.
+
+INSTALLATION PROCEDURE
+
+Step 6 — Panel Preparation
+Clean all mating surfaces. Apply 3M 08008 weld-through primer to
+bare metal flanges. Allow 15 minutes dry time before welding.
+
+Step 7 — Panel Fitting
+Position the new quarter panel. Verify all gaps and reveals:
+- Door to quarter gap: 4.0mm +/- 1.0mm
+- Lid to quarter gap: 3.5mm +/- 1.0mm
+
+Clamp panel at all weld flanges before welding.
+
+Step 8 — Welding
+Perform spot welds per original weld location map. Minimum
+weld specifications: 6mm nugget diameter, 25mm pitch spacing.
+Use GYS MIGS 200 or equivalent approved MIG welder.
+
+CAUTION: Do not heat UHSS panels above 150°C during repair.
+
+Step 9 — Corrosion Protection
+Apply cavity wax to all enclosed sections via access holes.
+Apply anti-corrosion sealer to all weld joints and panel flanges.
+Apply 2K epoxy primer within 4 hours of metal preparation.
+
+See CORROSION PROTECTION section for complete requirements.
+
+Advisory: This procedure is advisory guidance derived from repair documentation.
+Always verify against the current TOYOTA Collision Repair Guide for the
+specific vehicle and model year.

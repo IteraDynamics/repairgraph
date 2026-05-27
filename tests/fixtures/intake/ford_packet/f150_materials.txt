@@ -1,0 +1,42 @@
+FORD MOTOR COMPANY
+Material Specifications — Body Structure
+
+2022 FORD F-150
+
+MATERIAL CLASSIFICATION — BODY PANELS
+
+ALUMINUM ALLOYS:
+The 2022 F-150 body structure (cab, bed, doors, hood, fenders) uses:
+- 5000-series aluminum alloy (cab structure, inner panels)
+- 6000-series aluminum alloy (outer panels, bed sides)
+
+Tensile strength:
+- 5052-H32: 228 MPa yield / 262 MPa ultimate
+- 6111-T4: 170 MPa yield / 290 MPa ultimate (outer panels)
+
+HIGH STRENGTH STEEL (HSS):
+Frame rails and cab mounts remain high strength steel:
+- Grade: HSLA 550 (550 MPa yield strength)
+- Frame rails: 3.0-4.5mm gauge
+- Do not straighten — replace damaged frame sections
+
+ULTRA HIGH STRENGTH STEEL (UHSS):
+B-pillar inner reinforcement: 1500 MPa press-hardened steel
+- Hot press formed: cannot be straightened, heat, or welded conventionally
+- Replacement only — no repair permitted on 1500 MPa components
+
+MATERIAL IDENTIFICATION:
+Refer to Ford Body Parts Catalog for material identification by part number.
+All aluminum panels are marked with recycling symbol and alloy code on inner face.
+
+REPAIR RESTRICTIONS BY MATERIAL:
+Material | Straighten | Heat | Spot Weld | MIG | Adhesive
+Al 6000  |    No*     |  No  |  Alum eq  |  Al | Yes
+Al 5000  |    Yes     |  No  |  Alum eq  |  Al | Yes
+HSLA 550 |    Yes     | <649C|    Yes    | Yes | No
+UHSS 1500|    No      |  No  |    No     |  No | No
+
+*Minor straightening of 6000-series aluminum possible with specialized tools only
+All aluminum work requires aluminum-certified equipment and technicians.
+
+Tensile measurement units: MPa (megapascals); 1 ksi = 6.895 MPa
