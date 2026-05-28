@@ -200,14 +200,17 @@ def build_missing_role_report(manifest: IntakeManifest) -> dict[str, Any]:
     Describes what roles were detected, what is missing, and why each missing
     role matters for repair normalization.
 
-    Missing roles are computed from detected roles (not from the pre-stored
-    manifest.missing_roles list), so the report is accurate even for
-    hand-assembled or partially-initialised manifests.
+    Missing roles are computed from detected roles (which include supporting roles
+    collected during packet classification) so that a file with primary role
+    repair_procedure and supporting roles [welding, corrosion_protection] counts
+    welding and corrosion_protection as found.
     """
     found = set(manifest.detected_packet.detected_roles)
     all_expected = ESSENTIAL_ROLES | RECOMMENDED_ROLES
-    # Derive missing from what was actually detected, plus any explicitly listed
-    missing = (all_expected - found) | set(manifest.missing_roles)
+    # Derive missing from what was actually detected (supporting roles already included
+    # in detected_packet.detected_roles as of classify_intake_packet v2).
+    # manifest.missing_roles may be stale for hand-assembled manifests, so recompute.
+    missing = all_expected - found
 
     total_expected = len(ESSENTIAL_ROLES) + len(RECOMMENDED_ROLES)
     found_count = len(found - {"unknown"})

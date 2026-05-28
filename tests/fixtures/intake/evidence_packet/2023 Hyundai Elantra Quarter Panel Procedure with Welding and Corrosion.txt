@@ -1,0 +1,38 @@
+Elantra > Body and Frame > Quarter Panel > Service and Repair > Removal and Replacement
+
+QUARTER PANEL REMOVAL AND REPLACEMENT — HYUNDAI ELANTRA 2023
+Vehicle: 2023 Hyundai Elantra
+Operation: Rear Quarter Panel Replacement
+
+REMOVAL PROCEDURE
+Step 1. Disconnect battery negative terminal per Hyundai service procedure.
+Step 2. Remove rear interior trim panels, package shelf, and access covers.
+Step 3. Disconnect wiring harness connectors and grounding straps.
+Step 4. Drill spot welds per Hyundai weld diagram specifications.
+Step 5. Remove damaged quarter panel outer skin from vehicle.
+
+WELDING SPECIFICATIONS FOR INSTALLATION
+Number of weld points: 36 resistance spot welds (SRSW).
+MIG plug welds: 6 locations per weld diagram.
+Weld flange preparation: remove zinc coating in weld zone before welding.
+Heat affected zone: apply anti-corrosion primer after all welding operations.
+Weld nugget diameter: minimum 4mm per Hyundai weld specification.
+
+CORROSION PROTECTION
+Apply anti-corrosion primer to all bare metal surfaces before installation.
+Apply seam sealer to all mating flanges per Hyundai body sealant specification.
+Apply cavity wax injection to enclosed cavities after panel installation.
+Apply zinc-based rust preventative coating to all drilled weld holes.
+Electrocoat primer must be restored where damaged during removal.
+
+INSTALLATION PROCEDURE
+Step 1. Prepare replacement panel with anti-corrosion primer application.
+Step 2. Apply seam sealer to all mating flanges per Hyundai specification.
+Step 3. Install quarter panel using MIG welding procedure at approved weld points.
+Step 4. Verify resistance spot welding per weld schedule for all flange locations.
+Step 5. Apply corrosion protection per Hyundai body sealant requirements.
+Step 6. Verify panel gap specification per body alignment procedure.
+Step 7. Reinstall all interior trim and electrical connectors.
+
+Torque all fasteners to Hyundai specification.
+Hyundai requires qualified technician review of all collision repairs.

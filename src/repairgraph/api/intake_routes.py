@@ -21,6 +21,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 
 from repairgraph.intake.classify import classify_intake_packet, summarize_intake_manifest
+from repairgraph.intake.evidence import build_intake_evidence_payload
 from repairgraph.intake.report import build_intake_html_report
 from repairgraph.intake.schema import IntakeManifest
 from repairgraph.intake.upload_page import build_intake_upload_page
@@ -149,9 +150,26 @@ async def post_intake_report(
     """Accept uploaded files and return a self-contained HTML intake report.
 
     Classifies each file and generates a portable HTML report with diagnostics,
-    role coverage, confidence indicators, and readiness assessment.
+    role coverage, confidence indicators, readiness assessment, and an Evidence
+    Inspector section with per-file classification explanations.
     No files are retained.
     """
     manifest = await _process_uploads(files)
     html_content = build_intake_html_report(manifest)
     return HTMLResponse(content=html_content, status_code=200)
+
+
+@router.post("/evidence", summary="Return intake evidence inspector payload as JSON")
+async def post_intake_evidence(
+    files: list[UploadFile] = File(default=[]),
+) -> dict[str, Any]:
+    """Accept uploaded files and return a structured evidence/debug payload.
+
+    Classifies the packet and builds a per-file evidence payload that explains
+    why each file was classified, what evidence drove decisions, text quality,
+    breadcrumb navigation found, role scores, and confidence reasoning.
+
+    No files are retained. All outputs are advisory heuristic estimates.
+    """
+    manifest = await _process_uploads(files)
+    return build_intake_evidence_payload(manifest)

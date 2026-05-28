@@ -3,7 +3,8 @@ HTML intake report builder for RepairGraph OEM repair packet intake.
 
 Produces self-contained, portable HTML reports from IntakeManifest data.
 Reports show detected metadata, file classifications, role coverage,
-diagnostics, readiness assessment, and confidence indicators.
+diagnostics, readiness assessment, confidence indicators, and an Evidence
+Inspector section with per-file classification explanations.
 
 No external dependencies, no CDN, no network access required.
 Reports open directly in any browser.
@@ -17,6 +18,11 @@ import html
 from typing import Any
 
 from repairgraph.intake.diagnostics import build_intake_diagnostics, build_missing_role_report
+from repairgraph.intake.evidence import (
+    build_file_evidence,
+    explain_file_classification,
+    summarize_role_coverage,
+)
 from repairgraph.intake.schema import IntakeFile, IntakeManifest
 
 _ADVISORY_NOTE = (
@@ -77,7 +83,20 @@ tr:hover td{background:#f8f9fc}
 .progress-outer{background:#e9ecef;border-radius:4px;height:8px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}
 .progress-inner{height:100%;border-radius:4px;background:#2d5a8c}
 .role-found{background:#d4edda;color:#155724;border-radius:3px;padding:3px 9px;font-size:12px;font-weight:600;margin:2px;display:inline-block}
+.role-found-supporting{background:#cce5ff;color:#004085;border-radius:3px;padding:3px 9px;font-size:12px;font-weight:600;margin:2px;display:inline-block}
 .role-missing{background:#f8d7da;color:#721c24;border-radius:3px;padding:3px 9px;font-size:12px;font-weight:600;margin:2px;display:inline-block}
+details{margin:6px 0}
+details summary{cursor:pointer;font-size:12px;color:#2d5a8c;padding:4px 0;user-select:none}
+details summary:hover{color:#1a3f6f}
+details[open] summary{font-weight:600}
+.evidence-block{background:#f8f9fc;border:1px solid #e0e4ed;border-radius:4px;padding:10px 14px;margin:6px 0;font-size:12px}
+.evidence-label{font-size:11px;font-weight:600;color:#556;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.diag-code{font-family:monospace;font-size:11px;background:#eee;color:#334;padding:1px 5px;border-radius:2px}
+.expl-item{padding:2px 0;font-size:12px;color:#334;border-bottom:1px solid #f0f2f5}
+.expl-item:last-child{border-bottom:none}
+.text-quality-usable{color:#155724;font-weight:600}
+.text-quality-sparse{color:#7a5200;font-weight:600}
+.text-quality-none{color:#721c24;font-weight:600}
 footer{margin-top:24px;padding:14px 32px;font-size:11px;color:#aaa;border-top:1px solid #dde1e8;text-align:center}
 """
 
@@ -156,6 +175,184 @@ def _html_shell(title: str, body: str) -> str:
         f"</body>\n"
         f"</html>"
     )
+
+
+def _text_quality_badge(quality: str) -> str:
+    cls = f"text-quality-{quality}"
+    labels = {"usable": "Usable", "sparse": "Sparse", "none": "None"}
+    return f'<span class="{_h(cls)}">{_h(labels.get(quality, quality))}</span>'
+
+
+def _build_evidence_inspector_section(manifest: IntakeManifest) -> str:
+    """Build the Evidence Inspector HTML section for all files in the manifest."""
+    if not manifest.files:
+        return _section("Evidence Inspector", '<span class="empty">No files to inspect.</span>')
+
+    file_blocks: list[str] = []
+    for f in manifest.files:
+        ev = build_file_evidence(f)
+        fn_ev = ev["filename_evidence"]
+        txt_ev = ev["text_evidence"]
+        bc_ev = ev["breadcrumb_evidence"]
+        role_ev = ev["role_evidence"]
+        diags = ev["diagnostics_for_file"]
+        expl = ev["classification_explanation"]
+
+        # Header line
+        role_badge = _badge(f"r-{f.document_role}", f.document_role)
+        conf_disp = _confidence_display(f.confidence)
+        header = (
+            f'<span class="mono">{_h(f.filename)}</span> '
+            f'&nbsp;{role_badge}&nbsp;{conf_disp}'
+        )
+
+        body_parts: list[str] = []
+
+        # Classification Explanation (always visible)
+        expl_html = "".join(
+            f'<div class="expl-item">{_h(line)}</div>' for line in expl
+        )
+        body_parts.append(f'<div class="evidence-block"><div class="evidence-label">Classification Explanation</div>{expl_html}</div>')
+
+        # Role Evidence
+        role_scores_html = ""
+        if role_ev["role_scores"]:
+            score_rows = sorted(role_ev["role_scores"].items(), key=lambda x: -x[1])
+            role_scores_html = "".join(
+                f'<div class="kv"><span class="kv-key">{_h(r)}</span>'
+                f'<span class="kv-val">{_confidence_display(s)}</span></div>'
+                for r, s in score_rows
+            )
+        else:
+            role_scores_html = '<span class="empty">No role scores.</span>'
+
+        phrase_ev = role_ev["role_evidence_phrases"]
+        bc_ev_list = role_ev["role_evidence_breadcrumbs"]
+        evidence_phrases_html = ""
+        if phrase_ev:
+            evidence_phrases_html += (
+                '<div class="evidence-label">Ontology/Keyword Evidence</div>'
+                + "".join(f'<div class="expl-item"><span class="mono">{_h(p)}</span></div>' for p in phrase_ev)
+            )
+        if bc_ev_list:
+            evidence_phrases_html += (
+                '<div class="evidence-label" style="margin-top:6px">Breadcrumb Evidence</div>'
+                + "".join(
+                    f'<div class="expl-item"><span class="mono">{_h(s[5:].strip() if s.startswith("[bc]") else s)}</span></div>'
+                    for s in bc_ev_list
+                )
+            )
+
+        role_block = (
+            f'<div class="evidence-block">'
+            f'<div class="evidence-label">Role Scores (normalised)</div>'
+            f'{role_scores_html}'
+            f'{evidence_phrases_html}'
+            f'</div>'
+        )
+
+        # Text Evidence
+        quality = txt_ev["text_quality"]
+        quality_badge = _text_quality_badge(quality)
+        txt_block = (
+            f'<div class="evidence-block">'
+            f'<div class="evidence-label">Text Evidence</div>'
+            + _kv("Text Quality", "")
+            + f'<div style="margin:-22px 0 4px 168px">{quality_badge}</div>'
+            + _kv("Quality Reason", txt_ev["text_quality_reason"])
+            + _kv("Role Signal Count", txt_ev["role_signal_count"])
+            + f'</div>'
+        )
+
+        # Filename Evidence
+        fn_block = (
+            f'<div class="evidence-block">'
+            f'<div class="evidence-label">Filename Evidence</div>'
+            + _kv("Tokens", " | ".join(fn_ev["filename_tokens"]) or "—")
+            + _kv("OEM Candidates", ", ".join(str(x) for x in fn_ev["parsed_oem_candidates"]) or "—")
+            + _kv("Model Candidates", ", ".join(str(x) for x in fn_ev["parsed_model_candidates"]) or "—")
+            + _kv("Year Candidates", ", ".join(str(x) for x in fn_ev["parsed_year_candidates"]) or "—")
+            + _kv("Operation Candidates", ", ".join(str(x) for x in fn_ev["parsed_operation_candidates"]) or "—")
+            + f'</div>'
+        )
+
+        # Breadcrumb Evidence
+        bc_segs = bc_ev["detected_breadcrumb_segments"]
+        if bc_segs:
+            bc_html = "".join(
+                f'<div class="expl-item"><span class="mono">{_h(s)}</span></div>'
+                for s in bc_segs
+            )
+            bc_block = (
+                f'<div class="evidence-block">'
+                f'<div class="evidence-label">Breadcrumb Navigation Segments ({len(bc_segs)})</div>'
+                f'{bc_html}'
+                f'</div>'
+            )
+        else:
+            bc_block = ""
+
+        # Diagnostics for this file
+        if diags:
+            diag_html = "".join(
+                f'<div class="expl-item">'
+                f'<span class="diag-code">{_h(d["code"])}</span> '
+                f'{_h(d["message"])}'
+                + (f'<br><span style="color:#778;font-size:11px">{_h(d["detail"])}</span>' if d.get("detail") else "")
+                + f'</div>'
+                for d in diags
+            )
+            diag_block = (
+                f'<div class="evidence-block">'
+                f'<div class="evidence-label">File Diagnostics</div>'
+                f'{diag_html}'
+                f'</div>'
+            )
+        else:
+            diag_block = ""
+
+        # Warnings/Errors
+        warnings_block = ""
+        if f.warnings or f.errors:
+            we_html = "".join(
+                f'<div class="expl-item"><span class="badge sev-error">error</span> {_h(e)}</div>'
+                for e in f.errors
+            ) + "".join(
+                f'<div class="expl-item"><span class="badge sev-warning">warning</span> {_h(w)}</div>'
+                for w in f.warnings
+            )
+            warnings_block = (
+                f'<div class="evidence-block">'
+                f'<div class="evidence-label">Warnings &amp; Errors</div>'
+                f'{we_html}'
+                f'</div>'
+            )
+
+        inner = (
+            body_parts[0]  # explanation always shown
+            + f'<details><summary>Role Scores &amp; Evidence</summary>{role_block}</details>'
+            + f'<details><summary>Text Quality</summary>{txt_block}</details>'
+            + f'<details><summary>Filename Evidence</summary>{fn_block}</details>'
+            + (f'<details><summary>Breadcrumb Navigation ({len(bc_segs)} segments)</summary>{bc_block}</details>' if bc_segs else "")
+            + (f'<details><summary>File Diagnostics ({len(diags)})</summary>{diag_block}</details>' if diags else "")
+            + (f'<details><summary>Warnings &amp; Errors</summary>{warnings_block}</details>' if (f.warnings or f.errors) else "")
+        )
+
+        file_blocks.append(
+            f'<details style="margin-bottom:8px;border:1px solid #dde1e8;border-radius:4px;padding:8px 12px">'
+            f'<summary style="font-size:13px;font-weight:600">{header}</summary>'
+            f'<div style="margin-top:10px">{inner}</div>'
+            f'</details>'
+        )
+
+    content = (
+        '<p style="font-size:12px;color:#666;margin-bottom:12px">'
+        'Click a file to expand its evidence. '
+        'Shows why each file was classified, what evidence was found, and why confidence is high or low.'
+        '</p>'
+        + "".join(file_blocks)
+    )
+    return _section("Evidence Inspector", content)
 
 
 def build_intake_summary_cards(manifest: IntakeManifest) -> list[dict[str, str]]:
@@ -239,22 +436,32 @@ def build_intake_html_report(manifest: IntakeManifest) -> str:
     )
     parts.append(_section("Detected Packet Metadata", meta_html))
 
-    # Document role coverage
+    # Document role coverage — uses summarize_role_coverage which respects supporting roles
+    coverage = summarize_role_coverage(manifest)
     all_roles = [
         "repair_procedure", "sectioning", "welding", "corrosion_protection",
         "materials", "dimensions", "calibration", "precautions",
     ]
-    found_set = set(p.detected_roles)
-    role_html = "".join(
-        f'<span class="role-found">{_h(r)}</span>'
-        if r in found_set else
-        f'<span class="role-missing">{_h(r)} ✗</span>'
-        for r in all_roles
-    )
+    role_html = ""
+    for r in all_roles:
+        detail = coverage["coverage_detail"].get(r, {})
+        if detail.get("found"):
+            if detail.get("source") == "supporting_role":
+                role_html += (
+                    f'<span class="role-found-supporting" title="Found as supporting role">'
+                    f'{_h(r)} (supporting)</span>'
+                )
+            else:
+                role_html += f'<span class="role-found">{_h(r)}</span>'
+        else:
+            role_html += f'<span class="role-missing">{_h(r)} ✗</span>'
+
+    role_html += f'<p style="margin-top:10px;font-size:12px;color:#666;">{_h(coverage["coverage_note"])}</p>'
+
     unknown_files = [f for f in manifest.files if f.document_role == "unknown" and not f.errors]
     if unknown_files:
         role_html += (
-            f'<p style="margin-top:10px;font-size:12px;color:#888;">'
+            f'<p style="margin-top:4px;font-size:12px;color:#888;">'
             f'{len(unknown_files)} file(s) classified as unknown role.</p>'
         )
     parts.append(_section("Document Role Coverage", role_html))
@@ -351,6 +558,9 @@ def build_intake_html_report(manifest: IntakeManifest) -> str:
         + f'<p style="margin-top:12px;font-size:12px;color:#666;">{_h(manifest.advisory)}</p>'
     )
     parts.append(_section("Readiness Assessment", readiness_html))
+
+    # Evidence Inspector — per-file classification explanations
+    parts.append(_build_evidence_inspector_section(manifest))
 
     parts.append("</main>")
 

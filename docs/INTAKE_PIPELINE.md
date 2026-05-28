@@ -39,9 +39,10 @@ build_intake_html_report()      — portable HTML report
 | `intake/schema.py` | Dataclasses: IntakeFile, IntakeManifest, IntakePacket, IntakeDiagnostic, etc. |
 | `intake/classify.py` | File classification, OEM detection, packet assembly, breadcrumb parsing, multi-role detection |
 | `intake/diagnostics.py` | Completeness validation, missing role reports, diagnostic structuring |
-| `intake/report.py` | Self-contained HTML report generation |
+| `intake/evidence.py` | Intake Evidence Inspector: per-file evidence payloads, role coverage summary, classification explanations |
+| `intake/report.py` | Self-contained HTML report generation with Evidence Inspector section |
 | `intake/cli.py` | CLI: ingest files, write manifest JSON + HTML report |
-| `api/intake_routes.py` | FastAPI endpoints: POST /internal/intake/classify and /report |
+| `api/intake_routes.py` | FastAPI endpoints: POST /internal/intake/classify, /report, and /evidence |
 
 ---
 
@@ -166,12 +167,16 @@ separator-joined parts. Specific document-type segments (e.g., "weld points",
 (highest-scoring role) and a `supporting_roles` list of other roles that
 score at least 30% of the top score. A repair procedure that also references
 weld specifications would have `repair_procedure` as primary and `welding`
-as a supporting role. Supporting roles are recorded on `IntakeFile` but do
-not affect packet-level `detected_roles` (which reflects primary roles only).
+as a supporting role. Supporting roles are recorded on `IntakeFile` and
+**count toward packet-level role coverage** — a file with primary role
+`repair_procedure` and supporting roles `[welding, corrosion_protection]`
+causes all three to appear in `detected_packet.detected_roles`.
 
 **Role evidence:** `role_evidence` on `IntakeFile` records the top phrases
-(ontology matches, breadcrumb segments) that triggered the classification.
-This provides an explainability trail for human review.
+(breadcrumb segments first, then ontology phrase matches) that triggered the
+classification. Breadcrumb evidence appears first because it carries the
+highest signal weight (5×). This provides an explainability trail for human
+review.
 
 **Limitations of heuristics:**
 
@@ -260,6 +265,104 @@ pipeline. RepairGraph uses diagnostics to communicate:
 
 ---
 
+## Intake Evidence Inspector
+
+The Evidence Inspector (`intake/evidence.py`) builds structured debug payloads
+that explain why each file was classified, what evidence drove decisions, and
+why confidence is high or low.
+
+### Public functions
+
+```python
+build_file_evidence(file: IntakeFile) -> dict
+build_intake_evidence_payload(manifest: IntakeManifest) -> dict
+summarize_role_coverage(manifest: IntakeManifest) -> dict
+explain_file_classification(file: IntakeFile) -> list[str]
+```
+
+All outputs are deterministic and JSON-serializable.
+
+### Evidence payload fields
+
+**`filename_evidence`**
+- `parsed_oem_candidates`: OEM detected from filename tokens
+- `parsed_model_candidates`: Model detected from filename tokens
+- `parsed_year_candidates`: Year detected from filename tokens
+- `parsed_operation_candidates`: Operation detected from filename tokens
+- `filename_tokens`: Raw tokens from the filename stem
+
+**`text_evidence`**
+- `text_quality`: one of `"usable"`, `"sparse"`, `"none"`
+- `text_quality_reason`: plain-language explanation of quality indicator
+- `has_role_signals`: whether any role patterns matched
+- `role_signal_count`: number of roles that scored above zero
+- `text_matched_phrases`: ontology phrases matched from document text
+
+**`breadcrumb_evidence`**
+- `detected_breadcrumb_segments`: breadcrumb segments found (stripped `[bc]` prefix)
+- `breadcrumb_count`: number of breadcrumb segments
+- `breadcrumbs_found`: bool shorthand
+- `role_implications_from_breadcrumbs`: segments associated with detected roles
+
+**`role_evidence`**
+- `primary_role`: detected primary document role
+- `supporting_roles`: supporting roles (≥30% of top score)
+- `role_scores`: normalised role scores (1.0 = primary role)
+- `role_evidence_phrases`: ontology phrase matches
+- `role_evidence_breadcrumbs`: breadcrumb matches (tagged `[bc] ...`)
+- `confidence`: file confidence (0.0–1.0)
+- `confidence_explanation`: plain-language explanation of confidence value
+
+**`diagnostics_for_file`** — structured diagnostic codes:
+
+| Code | Meaning |
+|---|---|
+| `SPARSE_TEXT_EXTRACTION` | No or minimal usable text extracted |
+| `ROLE_SCORE_BELOW_THRESHOLD` | All role scores below threshold; role is unknown or low confidence |
+| `SUPPORTING_ROLE_ONLY` | Role detected only as supporting; no strong primary |
+| `ROLE_COVERAGE_FROM_SUPPORTING_ROLE` | Supporting roles contribute to packet coverage |
+| `BREADCRUMB_EVIDENCE_FOUND` | Breadcrumb navigation detected (highest-signal evidence) |
+| `FILENAME_ONLY_METADATA` | OEM/metadata detected from filename only; no text evidence |
+| `FILE_READ_ERROR` | File could not be read |
+
+**`classification_explanation`** — ordered list of plain-language sentences explaining
+OEM source, text quality, role classification rationale, evidence phrases, and confidence.
+
+### Role coverage semantics
+
+`summarize_role_coverage(manifest)` computes coverage across all eight tracked roles
+including both primary and supporting roles:
+
+- A role is **found from primary role** if it is the `document_role` of any readable file
+- A role is **found from supporting role** if it appears in `supporting_roles` of any readable file
+- **Missing roles** are those not found in either category
+
+This correctly handles common multi-role documents: a quarter panel replacement
+procedure that references welding and corrosion protection counts all three as covered.
+
+### Supporting role coverage
+
+When a role is covered only via supporting roles:
+- It appears in `roles_found` and `found_from_supporting_role_only` in the coverage summary
+- It is displayed with a distinct style in the HTML report (`role-found-supporting`)
+- It does not appear in `roles_missing`
+- A `ROLE_COVERAGE_FROM_SUPPORTING_ROLE` diagnostic code explains this
+
+**Advisory:** Supporting role coverage is weaker evidence than primary classification.
+A role counted via supporting roles means some document had secondary signals for that
+role — it does not mean a dedicated document of that type was supplied.
+
+### Evidence Inspector limitations
+
+- Extracted text is not stored in `IntakeFile` — text quality is inferred from
+  warnings and role scoring results, not from direct text inspection
+- Breadcrumb evidence is only visible in `role_evidence` if breadcrumbs were matched
+  and had capacity in the evidence slice (breadcrumbs are prioritised first)
+- Classification explanations are heuristic descriptions of the heuristic classifier;
+  they are advisory and require qualified review
+
+---
+
 ## Missing role report
 
 `build_missing_role_report(manifest)` explains which document roles are
@@ -340,10 +443,18 @@ http://localhost:8000/internal/intake
 
 1. Select or drag-and-drop one or more OEM repair documents into the upload zone
 2. Click **Analyze Packet** — the page calls `POST /internal/intake/classify`,
-   then renders summary cards, detected packet metadata, role coverage, per-file
-   classification table, and diagnostics inline
+   then renders:
+   - Summary cards (files, readable, roles found, roles missing, errors, warnings)
+   - Detected packet metadata (OEM, model, year, operation, confidence)
+   - Document role coverage — found roles in green, supporting-role-only in blue, missing in red
+   - File classifications with primary role, supporting roles, text quality indicator
+   - Diagnostics table
+   - Evidence Inspector — per-file expandable sections with role scores, breadcrumb
+     evidence, text quality, filename tokens, and warnings
 3. Click **View Full Report** — the page calls `POST /internal/intake/report`
-   and opens the portable HTML intake report in a new browser tab
+   and opens the portable HTML intake report in a new browser tab. The report
+   includes an Evidence Inspector section with classification explanations for
+   each file.
 
 **UI limitations:**
 
@@ -367,11 +478,21 @@ per request and discarded after the response. This is not a production SaaS surf
 GET  /internal/intake
 POST /internal/intake/classify
 POST /internal/intake/report
+POST /internal/intake/evidence
 ```
 
 `GET /internal/intake` returns the self-contained HTML upload page.
-`POST /classify` and `/report` accept multipart file uploads (`files` field).
-No files are retained. `/classify` returns JSON; `/report` returns `text/html`.
+
+`POST /classify`, `/report`, and `/evidence` accept multipart file uploads
+(`files` field). No files are retained after the response.
+
+- `/classify` returns JSON `IntakeManifest`
+- `/report` returns `text/html` portable report
+- `/evidence` returns JSON evidence inspector payload
+
+The evidence endpoint is the programmatic equivalent of the Evidence Inspector
+section in the HTML report. It is intended for debugging classification decisions
+and validating that role coverage, confidence, and evidence are correct.
 
 See `src/repairgraph/api/intake_routes.py` for implementation.
 

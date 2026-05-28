@@ -85,10 +85,19 @@ tr:hover td{background:#f8f9fc}
 .progress-outer{background:#e9ecef;border-radius:4px;height:8px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}
 .progress-inner{height:100%;border-radius:4px;background:#2d5a8c}
 .role-found{background:#d4edda;color:#155724;border-radius:3px;padding:3px 9px;font-size:12px;font-weight:600;margin:2px;display:inline-block}
+.role-found-supporting{background:#cce5ff;color:#004085;border-radius:3px;padding:3px 9px;font-size:12px;font-weight:600;margin:2px;display:inline-block}
 .role-missing{background:#f8d7da;color:#721c24;border-radius:3px;padding:3px 9px;font-size:12px;font-weight:600;margin:2px;display:inline-block}
 .error-box{background:#f8d7da;border-left:4px solid #cc3333;color:#721c24;padding:12px 16px;border-radius:4px;font-size:13px;white-space:pre-wrap;font-family:monospace}
 .loading-msg{color:#2d5a8c;font-size:13px;padding:8px 0}
 #results{display:none}
+details{margin:4px 0}
+details summary{cursor:pointer;font-size:12px;color:#2d5a8c;padding:2px 0;user-select:none}
+details summary:hover{color:#1a3f6f}
+.evidence-row{background:#f8f9fc;border-top:1px solid #eef0f3;padding:8px 10px;font-size:12px}
+.evidence-label{font-size:11px;font-weight:600;color:#556;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.text-quality-usable{color:#155724;font-weight:600}
+.text-quality-sparse{color:#7a5200;font-weight:600}
+.text-quality-none{color:#721c24;font-weight:600}
 footer{margin-top:24px;padding:14px 32px;font-size:11px;color:#aaa;border-top:1px solid #dde1e8;text-align:center}
 """
 
@@ -166,6 +175,141 @@ _JS = """\
     el.style.display = 'none';
   }
 
+  function buildRoleCoverage(files, foundRoles) {
+    // Compute role coverage from both primary and supporting roles
+    var allRoles = ['repair_procedure','sectioning','welding','corrosion_protection','materials','dimensions','calibration','precautions'];
+    var primaryFound = {};
+    var supportingFound = {};
+    foundRoles.forEach(function(r){ primaryFound[r] = true; });
+    files.forEach(function(f) {
+      if (f.errors && f.errors.length) return;
+      (f.supporting_roles || []).forEach(function(r){ supportingFound[r] = true; });
+    });
+    var allFound = {};
+    Object.keys(primaryFound).forEach(function(r){ allFound[r] = 'primary'; });
+    Object.keys(supportingFound).forEach(function(r){ if (!allFound[r]) allFound[r] = 'supporting'; });
+    return {allRoles: allRoles, allFound: allFound, primaryFound: primaryFound, supportingFound: supportingFound};
+  }
+
+  function renderRoleCoverage(coverage) {
+    var foundCount = Object.keys(coverage.allFound).length;
+    var totalCount = coverage.allRoles.length;
+    var supportingOnlyCount = Object.keys(coverage.supportingFound).filter(function(r){ return !coverage.primaryFound[r]; }).length;
+    var rolesHtml = coverage.allRoles.map(function(r) {
+      if (coverage.allFound[r] === 'primary') {
+        return '<span class="role-found">' + esc(r) + '</span>';
+      } else if (coverage.allFound[r] === 'supporting') {
+        return '<span class="role-found-supporting" title="Found as supporting role">' + esc(r) + ' (supporting)</span>';
+      } else {
+        return '<span class="role-missing">' + esc(r) + ' ✗</span>';
+      }
+    }).join('');
+    rolesHtml += '<p style="margin-top:8px;font-size:12px;color:#666">Found ' + foundCount + ' of ' + totalCount + ' tracked roles.';
+    if (supportingOnlyCount > 0) {
+      rolesHtml += ' ' + supportingOnlyCount + ' role(s) covered via supporting roles only (blue).';
+    }
+    rolesHtml += '</p>';
+    return rolesHtml;
+  }
+
+  function renderEvidenceSection(files) {
+    if (!files || files.length === 0) return '';
+    var blocks = files.map(function(f) {
+      var roleBadge = badge('r-' + (f.document_role || 'unknown'), f.document_role || 'unknown');
+      var conf = f.confidence || 0;
+      var confPct = Math.round(conf * 100);
+      var confCls = conf >= 0.65 ? 'conf-high' : conf >= 0.35 ? 'conf-med' : 'conf-low';
+      var confBadge = '<span class="badge ' + confCls + '">' + confPct + '%</span>';
+
+      var supporting = (f.supporting_roles || []);
+      var roleScores = f.role_scores || {};
+      var roleEvidence = f.role_evidence || [];
+      var warnings = f.warnings || [];
+      var errors = f.errors || [];
+
+      // Text quality
+      var warnJoined = warnings.join(' ').toLowerCase();
+      var errJoined = errors.join(' ').toLowerCase();
+      var textQuality = 'usable';
+      if (errors.length || errJoined.indexOf('could not') >= 0) {
+        textQuality = 'none';
+      } else if (warnJoined.indexOf('minimal content') >= 0 || warnJoined.indexOf('empty') >= 0) {
+        textQuality = warnJoined.indexOf('minimal content') >= 0 ? 'sparse' : 'none';
+      } else if (Object.keys(roleScores).length === 0 && roleEvidence.length === 0) {
+        textQuality = 'sparse';
+      }
+
+      // Role scores list
+      var scoreEntries = Object.keys(roleScores).sort(function(a,b){ return roleScores[b]-roleScores[a]; });
+      var scoresHtml = scoreEntries.length > 0
+        ? scoreEntries.map(function(r) {
+            var pct = Math.round(roleScores[r] * 100);
+            var cls = roleScores[r] >= 0.65 ? 'conf-high' : roleScores[r] >= 0.35 ? 'conf-med' : 'conf-low';
+            return '<div class="kv"><span class="kv-key">' + esc(r) + '</span>'
+              + '<span class="kv-val"><span class="badge ' + cls + '">' + pct + '%</span></span></div>';
+          }).join('')
+        : '<span class="empty">No role scores.</span>';
+
+      // Evidence phrases
+      var bcItems = roleEvidence.filter(function(e){ return e.indexOf('[bc]') === 0; });
+      var phraseItems = roleEvidence.filter(function(e){ return e.indexOf('[bc]') !== 0; });
+      var evidenceHtml = '';
+      if (phraseItems.length) {
+        evidenceHtml += '<div class="evidence-label" style="margin-top:8px">Keyword/Ontology Evidence</div>'
+          + phraseItems.map(function(p){ return '<div class="expl-item"><code>' + esc(p) + '</code></div>'; }).join('');
+      }
+      if (bcItems.length) {
+        evidenceHtml += '<div class="evidence-label" style="margin-top:8px">Breadcrumb Evidence</div>'
+          + bcItems.map(function(b){ return '<div class="expl-item"><code>' + esc(b.replace('[bc] ','')) + '</code></div>'; }).join('');
+      }
+
+      // Filename tokens
+      var stem = f.filename.replace(/\.[^.]+$/, '');
+      var tokens = stem.split(/[\s_\(\)\[\]\.]+/).filter(function(t){ return t; });
+
+      var qualityCls = 'text-quality-' + textQuality;
+
+      var innerHtml =
+        '<details><summary>Role Scores &amp; Evidence</summary>'
+        + '<div class="evidence-row"><div class="evidence-label">Role Scores</div>' + scoresHtml
+        + (evidenceHtml ? evidenceHtml : '')
+        + '</div></details>'
+        + '<details><summary>Text Quality: <span class="' + qualityCls + '">' + textQuality + '</span></summary>'
+        + '<div class="evidence-row">'
+        + '<div class="kv"><span class="kv-key">Quality</span><span class="kv-val ' + qualityCls + '">' + textQuality + '</span></div>'
+        + (Object.keys(roleScores).length ? '<div class="kv"><span class="kv-key">Roles Scored</span><span class="kv-val">' + Object.keys(roleScores).length + '</span></div>' : '')
+        + (warnings.length ? '<div class="kv"><span class="kv-key">Warnings</span><span class="kv-val">' + warnings.length + '</span></div>' : '')
+        + '</div></details>'
+        + '<details><summary>Filename Evidence</summary>'
+        + '<div class="evidence-row">'
+        + '<div class="kv"><span class="kv-key">Tokens</span><span class="kv-val">' + esc(tokens.join(' | ') || '—') + '</span></div>'
+        + '<div class="kv"><span class="kv-key">OEM</span><span class="kv-val">' + esc(f.detected_oem || '—') + '</span></div>'
+        + '<div class="kv"><span class="kv-key">Model</span><span class="kv-val">' + esc(f.detected_model || '—') + '</span></div>'
+        + '<div class="kv"><span class="kv-key">Year</span><span class="kv-val">' + esc(f.detected_year ? String(f.detected_year) : '—') + '</span></div>'
+        + '</div></details>';
+
+      if (warnings.length || errors.length) {
+        innerHtml += '<details><summary>Warnings &amp; Errors (' + (warnings.length + errors.length) + ')</summary>'
+          + '<div class="evidence-row">'
+          + errors.map(function(e){ return '<div class="expl-item">' + badge('sev-error','error') + ' ' + esc(e) + '</div>'; }).join('')
+          + warnings.map(function(w){ return '<div class="expl-item">' + badge('sev-warning','warning') + ' ' + esc(w) + '</div>'; }).join('')
+          + '</div></details>';
+      }
+
+      return '<details style="margin-bottom:8px;border:1px solid #dde1e8;border-radius:4px;padding:8px 12px">'
+        + '<summary style="font-size:13px;font-weight:600"><span class="mono">' + esc(f.filename) + '</span>&nbsp;&nbsp;'
+        + roleBadge
+        + (supporting.length ? '&nbsp;<span style="font-size:10px;color:#778">+ ' + esc(supporting.join(', ')) + '</span>' : '')
+        + '&nbsp;&nbsp;' + confBadge + '</summary>'
+        + '<div style="margin-top:10px">' + innerHtml + '</div>'
+        + '</details>';
+    });
+
+    return section('Evidence Inspector',
+      '<p style="font-size:12px;color:#666;margin-bottom:12px">Click a file to inspect classification evidence, role scores, text quality, and filename parsing.</p>'
+      + blocks.join(''));
+  }
+
   function displayResults(data) {
     clearError();
     var html = '';
@@ -174,7 +318,11 @@ _JS = """\
     var diags = data.diagnostics || [];
     var missingRoles = data.missing_roles || [];
     var foundRoles = (pkt.detected_roles || []);
-    var allRoles = ['repair_procedure','sectioning','welding','corrosion_protection','materials','dimensions','calibration','precautions'];
+
+    // Compute corrected role coverage (primary + supporting)
+    var coverage = buildRoleCoverage(files, foundRoles);
+    var allFoundCount = Object.keys(coverage.allFound).length;
+    var allMissingCount = coverage.allRoles.length - allFoundCount;
 
     // Summary cards
     var errCount = diags.filter(function(d){ return d.severity === 'error'; }).length;
@@ -183,8 +331,8 @@ _JS = """\
     var cards = [
       {value: String(files.length), label: 'Files', accent: 'blue'},
       {value: String(readable), label: 'Readable', accent: readable === files.length ? 'green' : 'amber'},
-      {value: String(foundRoles.length), label: 'Roles Found', accent: 'blue'},
-      {value: String(missingRoles.length), label: 'Roles Missing', accent: missingRoles.length > 0 ? 'amber' : 'green'},
+      {value: String(allFoundCount), label: 'Roles Found', accent: 'blue'},
+      {value: String(allMissingCount), label: 'Roles Missing', accent: allMissingCount > 0 ? 'amber' : 'green'},
       {value: String(errCount), label: 'Errors', accent: errCount > 0 ? 'red' : 'green'},
       {value: String(warnCount), label: 'Warnings', accent: warnCount > 0 ? 'amber' : 'green'},
     ];
@@ -205,26 +353,27 @@ _JS = """\
       + '<div class="kv"><span class="kv-key">OEM Confidence</span><span class="kv-val">' + confDisplay(pkt.oem_confidence || 0) + '</span></div>';
     html += section('Detected Packet', metaHtml);
 
-    // Role coverage
-    var foundSet = {};
-    foundRoles.forEach(function(r){ foundSet[r] = true; });
-    var rolesHtml = allRoles.map(function(r) {
-      return foundSet[r]
-        ? '<span class="role-found">' + esc(r) + '</span>'
-        : '<span class="role-missing">' + esc(r) + ' ✗</span>';
-    }).join('');
-    html += section('Document Role Coverage', rolesHtml);
+    // Role coverage (corrected: primary + supporting)
+    html += section('Document Role Coverage', renderRoleCoverage(coverage));
 
     // File classifications
     var fileRows = files.map(function(f) {
       var status = (f.errors && f.errors.length) ? badge('sev-error','Error')
                  : (f.warnings && f.warnings.length) ? badge('sev-warning','Warning')
                  : badge('r-ready','OK');
-      var roleCell = badge('', f.document_role || '—');
+      var roleCell = badge('r-' + (f.document_role || 'unknown'), f.document_role || '—');
       var supporting = (f.supporting_roles || []);
       if (supporting.length > 0) {
         roleCell += ' <span style="font-size:10px;color:#778">+ ' + esc(supporting.join(', ')) + '</span>';
       }
+      // Text quality indicator
+      var warnJoined = (f.warnings || []).join(' ').toLowerCase();
+      var tq = (f.errors && f.errors.length) ? 'none'
+              : (warnJoined.indexOf('minimal content') >= 0) ? 'sparse'
+              : (warnJoined.indexOf('empty') >= 0) ? 'none'
+              : (Object.keys(f.role_scores || {}).length === 0) ? 'sparse'
+              : 'usable';
+      var tqHtml = '<span class="text-quality-' + tq + '">' + tq + '</span>';
       return [
         '<span class="mono">' + esc(f.filename || '—') + '</span>',
         esc(f.extension || '—'),
@@ -233,10 +382,11 @@ _JS = """\
         esc(f.detected_model || '—'),
         esc(f.detected_year ? String(f.detected_year) : '—'),
         confDisplay(f.confidence || 0),
+        tqHtml,
         status,
       ];
     });
-    html += section('File Classifications', table(['Filename','Ext','Role','OEM','Model','Year','Confidence','Status'], fileRows));
+    html += section('File Classifications', table(['Filename','Ext','Role','OEM','Model','Year','Confidence','Text Quality','Status'], fileRows));
 
     // Diagnostics
     if (diags.length > 0) {
@@ -252,6 +402,9 @@ _JS = """\
     } else {
       html += section('Diagnostics', '<span class="empty">No diagnostics.</span>');
     }
+
+    // Evidence Inspector
+    html += renderEvidenceSection(files);
 
     document.getElementById('results').innerHTML = html;
     document.getElementById('results').style.display = '';

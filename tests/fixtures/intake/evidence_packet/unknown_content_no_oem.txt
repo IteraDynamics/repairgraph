@@ -1,0 +1,7 @@
+This document contains general administrative notes unrelated to collision repair procedures.
+Page references, index entries, and table of contents items are listed below.
+Section A: Introduction
+Section B: General Information
+Section C: Parts List
+Appendix 1: Part Numbers
+Appendix 2: Torque Values

@@ -715,10 +715,18 @@ def detect_document_roles(text: str) -> dict[str, Any]:
 
     all_detected = [primary_role] + supporting_roles
     evidence: list[str] = []
+    # Breadcrumb evidence first (highest-signal, 5× weight) so it always appears
     for role in all_detected:
-        for item in evidence_by_role.get(role, [])[:3]:
-            if item not in evidence:
+        for item in evidence_by_role.get(role, []):
+            if item.startswith("[bc]") and item not in evidence:
                 evidence.append(item)
+    # Ontology phrase evidence next (3× weight), up to 3 per role
+    for role in all_detected:
+        phrase_count = 0
+        for item in evidence_by_role.get(role, []):
+            if not item.startswith("[bc]") and item not in evidence and phrase_count < 3:
+                evidence.append(item)
+                phrase_count += 1
     evidence = evidence[:8]
 
     return {
@@ -1013,7 +1021,16 @@ def classify_intake_packet(paths: list[Path]) -> IntakeManifest:
     readable = [f for _, f in readable_pairs]
     n_readable = len(readable)
 
-    detected_roles = sorted({f.document_role for f in readable if f.document_role != "unknown"})
+    # Collect roles from primary document_role and supporting_roles across all readable files.
+    # Supporting roles score ≥30% of the top role score and count as packet-level coverage.
+    _role_set: set[str] = set()
+    for _f in readable:
+        if _f.document_role != "unknown":
+            _role_set.add(_f.document_role)
+        for _r in _f.supporting_roles:
+            if _r != "unknown":
+                _role_set.add(_r)
+    detected_roles = sorted(_role_set)
     weights = [f.confidence for f in readable]
     avg_conf = sum(weights) / len(weights) if weights else 0.0
 
