@@ -27,6 +27,7 @@ DIAG_SUPPORTING_ROLE_ONLY = "SUPPORTING_ROLE_ONLY"
 DIAG_ROLE_COVERAGE_FROM_SUPPORTING = "ROLE_COVERAGE_FROM_SUPPORTING_ROLE"
 DIAG_BREADCRUMB_EVIDENCE_FOUND = "BREADCRUMB_EVIDENCE_FOUND"
 DIAG_FILENAME_ONLY_METADATA = "FILENAME_ONLY_METADATA"
+DIAG_ROLE_FROM_OPERATION = "ROLE_FROM_OPERATION"
 
 _ALL_TRACKED_ROLES = [
     "repair_procedure",
@@ -308,6 +309,25 @@ def _build_diagnostics_for_file(file: IntakeFile) -> list[dict[str, Any]]:
             ),
         })
 
+    # Operation-inferred role
+    if "ROLE_FROM_OPERATION" in " ".join(file.warnings):
+        op_warn = next(
+            (w for w in file.warnings if w.startswith("ROLE_FROM_OPERATION:")), ""
+        )
+        diags.append({
+            "code": DIAG_ROLE_FROM_OPERATION,
+            "message": (
+                f"Role '{file.document_role}' inferred from filename operation — "
+                "text content was too sparse for direct role detection."
+            ),
+            "detail": (
+                op_warn or (
+                    "Supply text-format documents for content-based role detection. "
+                    "Operation-inferred roles carry lower confidence than content-detected roles."
+                )
+            ),
+        })
+
     # Role detection issues
     if file.document_role == "unknown":
         if not file.role_scores:
@@ -442,6 +462,7 @@ def explain_file_classification(file: IntakeFile) -> list[str]:
         )
 
     # Role classification
+    warning_text = " ".join(file.warnings)
     if file.document_role == "unknown":
         if not file.role_scores:
             lines.append(
@@ -457,6 +478,11 @@ def explain_file_classification(file: IntakeFile) -> list[str]:
                 f"Weak signals detected for: {', '.join(file.supporting_roles)} "
                 "(insufficient for primary classification)."
             )
+    elif "ROLE_FROM_OPERATION" in warning_text:
+        lines.append(
+            f"Primary role '{file.document_role}' inferred from filename operation — "
+            "text extraction did not yield enough content for direct role detection."
+        )
     else:
         lines.append(
             f"Primary role '{file.document_role}' selected as the highest-scoring role."

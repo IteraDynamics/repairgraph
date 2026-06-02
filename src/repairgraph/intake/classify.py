@@ -246,6 +246,26 @@ _OPERATION_PATTERNS: list[tuple[str, str]] = [
     (r"pillar replacement|pillar repair", "pillar_replacement"),
 ]
 
+# Fallback: infer document role from detected operation when text extraction is
+# too sparse to yield role signals.  Only fires when role == "unknown".
+# Panel operations → repair_procedure; sectioning → sectioning.
+_OPERATION_TO_ROLE: dict[str, str] = {
+    "quarter_panel_replacement": "repair_procedure",
+    "bed_side_panel_replacement": "repair_procedure",
+    "outer_panel_replacement": "repair_procedure",
+    "roof_panel_replacement": "repair_procedure",
+    "door_replacement": "repair_procedure",
+    "hood_replacement": "repair_procedure",
+    "fender_replacement": "repair_procedure",
+    "bumper_replacement": "repair_procedure",
+    "floor_panel_replacement": "repair_procedure",
+    "panel_sectioning": "sectioning",
+    "frame_repair": "repair_procedure",
+    "unibody_repair": "repair_procedure",
+    "rocker_panel_replacement": "repair_procedure",
+    "pillar_replacement": "repair_procedure",
+}
+
 # ── Document role keyword sets ─────────────────────────────────────────────────
 
 _ROLE_KEYWORD_SETS: dict[str, list[str]] = {
@@ -972,6 +992,25 @@ def classify_intake_file(path: Path) -> IntakeFile:
             )
             detected_oem = model_implied
             oem_confidence = 0.35
+
+    # ── Operation-to-role fallback ─────────────────────────────────────────────
+    # When text extraction was too sparse for content-based role detection but
+    # the filename names a known operation (e.g. 'quarter_panel_replacement'),
+    # infer the document role from the operation.  Only fires when role is still
+    # "unknown" — it never overrides a content-detected role.
+    if role == "unknown" and detected_operation and detected_operation in _OPERATION_TO_ROLE:
+        role = _OPERATION_TO_ROLE[detected_operation]
+        role_result = {
+            "primary_role": role,
+            "supporting_roles": [],
+            "role_scores": {},
+            "role_evidence": [],
+        }
+        warnings.append(
+            f"ROLE_FROM_OPERATION: role '{role}' inferred from filename operation "
+            f"'{detected_operation}' — text extraction was insufficient for "
+            "content-based role detection."
+        )
 
     # ── Final confidence adjustments ──
     confidence = oem_confidence
