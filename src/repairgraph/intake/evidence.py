@@ -46,6 +46,9 @@ _FILENAME_SEP_RE = re.compile(r"[\s_\(\)\[\]\.]+")
 def _filename_tokens(filename: str) -> list[str]:
     """Return normalised tokens from a filename stem."""
     stem = Path(filename).stem
+    # Collapse multi-hyphen separators (e.g. ALLDATA's '--') into spaces before
+    # other normalization.  Single hyphens are preserved for model names (F-150).
+    stem = re.sub(r"-{2,}", " ", stem)
     normalized = _FILENAME_SEP_RE.sub(" ", stem).strip()
     return [t for t in normalized.split() if t]
 
@@ -210,18 +213,29 @@ def _explain_confidence(file: IntakeFile) -> str:
             "but no OEM could be detected from filename or document content."
         )
 
-    # Explain OEM source
+    # Explain OEM source — build as a single sentence so qualifiers don't
+    # start new fragments after a period when joined with ". ".
     if file.detected_oem:
-        parts.append(f"OEM '{file.detected_oem}' detected")
         warning_joined = " ".join(file.warnings)
         if "METADATA_CONFLICT" in warning_joined:
-            parts.append("(filename/text conflict — filename prioritised, confidence reduced)")
+            parts.append(
+                f"OEM '{file.detected_oem}' detected "
+                "(filename/text conflict — filename prioritised, confidence reduced)"
+            )
         elif file.confidence >= 0.70:
-            parts.append("with strong agreement between filename and text")
+            parts.append(
+                f"OEM '{file.detected_oem}' detected with strong agreement "
+                "between filename and text"
+            )
         elif file.confidence >= 0.50:
-            parts.append("from filename evidence (text corroboration absent or weak)")
+            parts.append(
+                f"OEM '{file.detected_oem}' detected from filename evidence "
+                "(text corroboration absent or weak)"
+            )
         else:
-            parts.append("but with limited corroboration")
+            parts.append(
+                f"OEM '{file.detected_oem}' detected with limited corroboration"
+            )
     else:
         parts.append("No OEM detected (reduces base confidence)")
 
@@ -287,10 +301,10 @@ def _build_diagnostics_for_file(file: IntakeFile) -> list[dict[str, Any]]:
     if file.detected_oem and not file.role_scores:
         diags.append({
             "code": DIAG_FILENAME_ONLY_METADATA,
-            "message": "OEM/metadata detected from filename only — no text metadata evidence.",
+            "message": "OEM/metadata identified from filename — no text metadata evidence.",
             "detail": (
-                f"Filename indicates OEM={file.detected_oem!r} but document text "
-                "was not readable or had no matching OEM patterns."
+                f"OEM={file.detected_oem!r} was identified from filename tokens or model name, "
+                "but document text was not readable or had no matching OEM patterns."
             ),
         })
 
