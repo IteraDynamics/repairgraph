@@ -311,20 +311,15 @@ def _build_diagnostics_for_file(file: IntakeFile) -> list[dict[str, Any]]:
 
     # Operation-inferred role
     if "ROLE_FROM_OPERATION" in " ".join(file.warnings):
-        op_warn = next(
-            (w for w in file.warnings if w.startswith("ROLE_FROM_OPERATION:")), ""
-        )
         diags.append({
             "code": DIAG_ROLE_FROM_OPERATION,
             "message": (
-                f"Role '{file.document_role}' inferred from filename operation — "
-                "text content was too sparse for direct role detection."
+                f"Role '{file.document_role}' inferred from filename operation "
+                f"'{file.detected_operation}' — text was too sparse for content-based detection."
             ),
             "detail": (
-                op_warn or (
-                    "Supply text-format documents for content-based role detection. "
-                    "Operation-inferred roles carry lower confidence than content-detected roles."
-                )
+                "Supply text-format documents for content-based role detection. "
+                "Operation-inferred roles carry lower confidence than content-detected roles."
             ),
         })
 
