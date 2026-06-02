@@ -217,6 +217,17 @@ _MODEL_CANONICAL: dict[str, dict[str, str]] = {
     },
 }
 
+# Reverse lookup: canonical model name → OEM.
+# Used for model-to-OEM inference when a filename or text identifies the model
+# but not the OEM (e.g. filename "2023 Elantra quarter panel.pdf" has no "Hyundai").
+# Must NOT be used inside _extract_filename_metadata — that function must return
+# oem=None for model-only filenames so that existing tests remain valid.
+_MODEL_TO_OEM: dict[str, str] = {
+    canonical: oem
+    for oem, canon_map in _MODEL_CANONICAL.items()
+    for canonical in canon_map.values()
+}
+
 _OPERATION_PATTERNS: list[tuple[str, str]] = [
     (r"quarter panel replacement", "quarter_panel_replacement"),
     (r"quarter panel", "quarter_panel_replacement"),
@@ -937,8 +948,37 @@ def classify_intake_file(path: Path) -> IntakeFile:
     # ── Operation resolution: filename takes priority ──
     detected_operation = filename_meta["operation"] or text_meta["operation"]
 
+    # ── Model-to-OEM inference ─────────────────────────────────────────────────
+    # When no explicit OEM was found in filename or text, but a known model is
+    # present, infer the OEM from the model.  Applied here (not in
+    # _extract_filename_metadata) so that the public API of that function is
+    # unchanged and existing metadata-voting tests continue to pass.
+    if not detected_oem and detected_model and detected_model in _MODEL_TO_OEM:
+        detected_oem = _MODEL_TO_OEM[detected_model]
+        oem_confidence = 0.35
+    elif (
+        detected_oem
+        and not fn_oem  # only text gave us an OEM
+        and detected_model
+        and detected_model in _MODEL_TO_OEM
+    ):
+        model_implied = _MODEL_TO_OEM[detected_model]
+        if model_implied != detected_oem:
+            # Model identity (from filename) is stronger than an isolated OEM
+            # mention scraped from noisy PDF text.
+            warnings.append(
+                f"MODEL_OEM_OVERRIDE: text-detected OEM={detected_oem!r} overridden "
+                f"by model {detected_model!r} → {model_implied!r}."
+            )
+            detected_oem = model_implied
+            oem_confidence = 0.35
+
     # ── Final confidence adjustments ──
     confidence = oem_confidence
+    # Confidence floor: if text is readable and a role was detected, don't
+    # collapse to 0.0 just because no OEM was found.
+    if role != "unknown" and text.strip() and confidence == 0.0:
+        confidence = 0.25
     if role == "unknown":
         confidence = max(0.0, confidence - 0.1)
     if not text.strip():
@@ -1042,7 +1082,13 @@ def classify_intake_packet(paths: list[Path]) -> IntakeManifest:
     fn_models: list[str | None] = []
     for path, _ in readable_pairs:
         fm = _extract_filename_metadata(path.stem)
-        fn_oems.append(fm["oem"])
+        fn_oem_val = fm["oem"]
+        # Apply the same model-to-OEM inference used in classify_intake_file so
+        # that packet-level OEM voting correctly counts model-only filenames
+        # (e.g. "2023 Elantra …" → Hyundai).
+        if fn_oem_val is None and fm["model"] and fm["model"] in _MODEL_TO_OEM:
+            fn_oem_val = _MODEL_TO_OEM[fm["model"]]
+        fn_oems.append(fn_oem_val)
         fn_years.append(fm["year"])
         fn_models.append(fm["model"])
 

@@ -90,13 +90,25 @@ def _text_quality_reason(file: IntakeFile, quality: str) -> str:
 
 
 def _build_filename_evidence(file: IntakeFile) -> dict[str, Any]:
-    """Build filename evidence from an IntakeFile."""
+    """Build filename evidence from an IntakeFile.
+
+    Calls _extract_filename_metadata directly so that the returned
+    parsed_oem_candidates reflects what was actually parsed from the filename,
+    not the (possibly model-inferred or text-detected) file.detected_oem.
+    """
+    from repairgraph.intake.classify import _extract_filename_metadata, _MODEL_TO_OEM  # noqa: PLC0415
+    stem = Path(file.filename).stem
+    fn_meta = _extract_filename_metadata(stem)
     tokens = _filename_tokens(file.filename)
+    model_inferred_oem = (
+        _MODEL_TO_OEM.get(fn_meta["model"]) if fn_meta["model"] else None
+    )
     return {
-        "parsed_oem_candidates": [file.detected_oem] if file.detected_oem else [],
-        "parsed_model_candidates": [file.detected_model] if file.detected_model else [],
-        "parsed_year_candidates": [file.detected_year] if file.detected_year else [],
-        "parsed_operation_candidates": [file.detected_operation] if file.detected_operation else [],
+        "parsed_oem_candidates": [fn_meta["oem"]] if fn_meta["oem"] else [],
+        "parsed_model_candidates": [fn_meta["model"]] if fn_meta["model"] else [],
+        "parsed_year_candidates": [fn_meta["year"]] if fn_meta["year"] else [],
+        "parsed_operation_candidates": [fn_meta["operation"]] if fn_meta["operation"] else [],
+        "model_inferred_oem": model_inferred_oem,
         "filename_tokens": tokens,
         "note": (
             "Filename evidence is high-signal and takes priority over document text "
@@ -193,7 +205,10 @@ def _explain_confidence(file: IntakeFile) -> str:
     if file.confidence == 0.0:
         if not file.role_scores:
             return "Confidence is 0.0 — no text was extracted and no role signals were found."
-        return "Confidence is 0.0 — no OEM detected and no readable text."
+        return (
+            "Confidence is 0.0 — text was extracted and role patterns matched, "
+            "but no OEM could be detected from filename or document content."
+        )
 
     # Explain OEM source
     if file.detected_oem:
@@ -366,8 +381,9 @@ def explain_file_classification(file: IntakeFile) -> list[str]:
     # OEM detection
     if file.detected_oem:
         has_fn_oem = bool(fn_ev["parsed_oem_candidates"])
+        model_inferred_oem = fn_ev.get("model_inferred_oem")
+        warning_joined = " ".join(file.warnings)
         if has_fn_oem:
-            warning_joined = " ".join(file.warnings)
             if "METADATA_CONFLICT" in warning_joined:
                 lines.append(
                     f"OEM '{file.detected_oem}' detected from filename; "
@@ -375,6 +391,16 @@ def explain_file_classification(file: IntakeFile) -> list[str]:
                 )
             else:
                 lines.append(f"OEM '{file.detected_oem}' detected from filename tokens.")
+        elif model_inferred_oem and model_inferred_oem == file.detected_oem:
+            lines.append(
+                f"OEM '{file.detected_oem}' inferred from model name "
+                f"'{file.detected_model}' found in filename."
+            )
+        elif "MODEL_OEM_OVERRIDE" in warning_joined:
+            lines.append(
+                f"OEM '{file.detected_oem}' inferred from model name '{file.detected_model}' "
+                "(overriding weak text-detected OEM signal)."
+            )
         else:
             lines.append(f"OEM '{file.detected_oem}' detected from document text.")
     else:
