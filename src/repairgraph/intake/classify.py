@@ -451,6 +451,8 @@ _BREADCRUMB_ROLE_MAP: dict[str, str] = {
     "body sealant": "corrosion_protection",
     "seam sealer": "corrosion_protection",
     "material specification": "materials",
+    "construction materials": "materials",
+    "structural materials": "materials",
     "steel grade": "materials",
     "tensile strength": "materials",
     "panel gap": "dimensions",
@@ -598,9 +600,30 @@ def _read_file_text(path: Path) -> tuple[str, list[str], list[str]]:
     ext = path.suffix.lower()
 
     if ext == ".pdf":
+        text = ""
+        try:
+            # Prefer pdftotext (poppler-utils) — extracts the real text layer
+            # rather than raw byte scanning, which picks up binary noise.
+            import subprocess  # noqa: PLC0415
+            proc = subprocess.run(
+                ["pdftotext", str(path), "-"],
+                capture_output=True, text=True, timeout=30, check=False,
+            )
+            if proc.returncode == 0 and len(proc.stdout.strip()) >= 40:
+                warnings.append(
+                    "PDF text extracted via pdftotext. "
+                    "Accuracy may be limited for scanned or image-based documents."
+                )
+                return proc.stdout, warnings, errors
+        except FileNotFoundError:
+            pass  # pdftotext not installed; fall through to heuristic scanner
+        except Exception:  # noqa: BLE001
+            pass
         try:
             raw = path.read_bytes()
-            # Extract printable ASCII runs embedded in PDF binary stream
+            # Fallback: extract printable ASCII runs from the PDF binary stream.
+            # Less accurate than pdftotext — misses text in complex encodings
+            # and can pick up noise from binary object data.
             chunks = re.findall(rb"[\x20-\x7e]{6,}", raw)
             text = " ".join(c.decode("ascii", errors="replace") for c in chunks)
             if len(text.strip()) < 40:
@@ -743,6 +766,24 @@ def detect_document_roles(text: str) -> dict[str, Any]:
         r for r, s in sorted(raw_scores.items(), key=lambda x: -x[1])
         if r != primary_role and s >= threshold
     ]
+
+    # Breadcrumb-dominant rule: a breadcrumb segment is ALLDATA's explicit
+    # document-type label — "Removal and Replacement", "Weld Points", etc.
+    # When a breadcrumb maps to a role, that role wins over keyword accumulation
+    # (e.g. a repair-procedure document that mentions welding heavily should not
+    # be reclassified as welding just because weld keywords dominate the body).
+    bc_evidenced_roles = {
+        role for role in raw_scores
+        if any(ev.startswith("[bc]") for ev in evidence_by_role.get(role, []))
+    }
+    if bc_evidenced_roles:
+        bc_primary = max(bc_evidenced_roles, key=lambda r: raw_scores.get(r, 0))
+        if bc_primary != primary_role:
+            primary_role = bc_primary
+            supporting_roles = [
+                r for r, s in sorted(raw_scores.items(), key=lambda x: -x[1])
+                if r != primary_role and s >= threshold
+            ]
 
     all_detected = [primary_role] + supporting_roles
     evidence: list[str] = []
@@ -992,6 +1033,11 @@ def classify_intake_file(path: Path) -> IntakeFile:
             )
             detected_oem = model_implied
             oem_confidence = 0.35
+        else:
+            # Model name confirms text OEM — boost confidence; a single OEM hit
+            # in a long document normally receives the isolation penalty, but
+            # the model name corroborates the identity from a second channel.
+            oem_confidence = max(oem_confidence, 0.35)
 
     # ── Operation-to-role fallback ─────────────────────────────────────────────
     # When text extraction was too sparse for content-based role detection but

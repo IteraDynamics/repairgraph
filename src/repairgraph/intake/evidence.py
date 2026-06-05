@@ -66,6 +66,9 @@ def _text_quality(file: IntakeFile) -> str:
         return "none"
     if "minimal content" in warning_joined or "yielded minimal" in warning_joined:
         return "sparse"
+    # pdftotext succeeded — quality determined by whether role scoring found signals
+    if "via pdftotext" in warning_joined and not file.role_scores and not file.role_evidence:
+        return "sparse"
     if not file.role_scores and not file.role_evidence:
         # No signal at all — either unsupported extension or truly empty content
         if file.extension.lower() not in {".txt", ".md", ".csv", ".json", ".html", ".pdf"}:
@@ -76,20 +79,23 @@ def _text_quality(file: IntakeFile) -> str:
 
 def _text_quality_reason(file: IntakeFile, quality: str) -> str:
     """Human-readable explanation for text quality."""
+    w = " ".join(file.warnings).lower()
     if quality == "none":
         if file.errors:
             return "File could not be read due to errors."
-        if "file is empty" in " ".join(file.warnings).lower():
+        if "file is empty" in w:
             return "File is empty — no content to extract."
-        if "minimal content" in " ".join(file.warnings).lower():
+        if "minimal content" in w:
             return "PDF or binary file yielded no readable text."
         return "No readable text was extracted from this file."
     if quality == "sparse":
-        if "minimal content" in " ".join(file.warnings).lower():
+        if "minimal content" in w:
             return "PDF text extraction yielded minimal content. File may be scanned/image-only."
         if not file.role_scores:
             return "Text was extracted but no known role patterns matched. Content may be very short or unrecognized."
         return "Limited text was extracted. Classification confidence is reduced."
+    if "via pdftotext" in w:
+        return "PDF text layer extracted via pdftotext and role patterns were matched."
     return "Document text was readable and role patterns were matched."
 
 
