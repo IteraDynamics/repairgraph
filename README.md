@@ -267,6 +267,7 @@ uvicorn repairgraph.api.app:app --reload
 | `GET /internal/state/accord/projected` | Projected Accord state after deterministic demo event ledger |
 | `GET /internal/state/accord/ar-payload` | AR workflow payload for the projected Accord state |
 | `GET /internal/state/accord/summary` | Compact summary: session, workflow counts, blockers, next actions |
+| `GET /internal/state/accord/topology-viewer` | **Interactive topology viewer** (self-contained HTML) |
 
 **Example:**
 
@@ -318,6 +319,7 @@ Prints a concise summary: event count, open blockers, active phases, next action
 | `GET /internal/state/accord/timeline` | Ordered event, phase, and action timelines |
 | `GET /internal/state/accord/replay` | Event-by-event state replay with diffs |
 | `GET /internal/state/accord/visualization` | Combined visualization payload with Mermaid diagrams |
+| `GET /internal/state/accord/topology-viewer` | **Interactive topology viewer** — vehicle silhouette with live state, timeline replay, click-to-inspect |
 
 The replay endpoint returns ordered snapshots — one per event applied — with
 a lightweight state summary and change diff at each step. The visualization
@@ -333,6 +335,20 @@ endpoint returns the full introspection payload including all four Mermaid diagr
   it blocks; open blockers in red, resolved in green
 - `accord_zone_activation.mmd` — `flowchart LR` showing repair zones coloured by
   activation state (active=amber, complete=green, blocked=red, inactive=grey)
+
+#### Interactive Topology Viewer
+
+Open `http://localhost:8000/internal/state/accord/topology-viewer` in any browser.
+
+The viewer is a self-contained HTML page (no CDN, no React, no external dependencies) that renders:
+
+- **Vehicle silhouette** — color-coded repair regions showing live workflow state
+- **Click-to-inspect** — click any region to see its procedures, QA gates, blockers, and next actions
+- **Timeline replay** — scrub through the repair event history; the vehicle updates live
+- **Filters** — toggle QA gates, blockers, completed regions, and dependency arrows
+- **Export** — download the current viewer state as a standalone HTML file
+
+See [docs/INTERACTIVE_TOPOLOGY_VIEWER.md](docs/INTERACTIVE_TOPOLOGY_VIEWER.md) for full documentation.
 
 #### Replay and introspection
 

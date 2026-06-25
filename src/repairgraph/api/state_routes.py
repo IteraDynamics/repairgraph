@@ -33,6 +33,7 @@ from repairgraph.state.timeline import (
     summarize_timeline,
 )
 from repairgraph.state.visualization_payload import build_workflow_visualization_payload
+from repairgraph.viewer.topology_viewer import build_topology_viewer_html
 
 router = APIRouter(prefix="/internal/state", tags=["state"])
 
@@ -189,6 +190,24 @@ def get_accord_report(view: str = Query(default="workflow", description="Report 
     else:
         state = build_accord_projected_state()
         html_content = build_workflow_html_report(state)
+    return HTMLResponse(content=html_content, status_code=200)
+
+
+@router.get(
+    "/accord/topology-viewer",
+    summary="Interactive topology viewer for projected Accord repair state",
+    response_class=HTMLResponse,
+)
+def get_accord_topology_viewer() -> HTMLResponse:
+    """Return a self-contained interactive topology viewer for the Honda 2025 Accord.
+
+    Renders a vehicle silhouette with color-coded repair zones, a timeline replay
+    scrubber, and a click-to-inspect panel. No external dependencies required.
+    All workflow data is embedded as JSON; the page runs entirely in the browser.
+    """
+    initial = build_accord_initial_state()
+    events = build_accord_demo_events(initial)
+    html_content = build_topology_viewer_html(initial, events)
     return HTMLResponse(content=html_content, status_code=200)
 
 
