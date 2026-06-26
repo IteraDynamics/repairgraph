@@ -1,5 +1,17 @@
 # RepairGraph Operational Model
 
+## Implementation Status
+
+**Implemented.** The `OperationalModel` is available at `src/repairgraph/core/operational_model.py`.
+
+The `RepairGraphCompiler` that produces it is at `src/repairgraph/core/compiler.py`.
+
+Domain adapters (starting with `CollisionDomainAdapter`) are at `src/repairgraph/adapters/`.
+
+See [COMPILER_ARCHITECTURE.md](./COMPILER_ARCHITECTURE.md) for the full architecture description.
+
+---
+
 ## Purpose
 
 The `OperationalModel` is the canonical artifact produced by RepairGraph.
