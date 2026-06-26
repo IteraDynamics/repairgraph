@@ -158,6 +158,38 @@ html,body{min-height:100%;background:var(--bg);color:var(--text2);
 .intel-card.c-red .num{color:var(--red)}
 .intel-card.c-purple .num{color:var(--purple)}
 
+/* ── Insight finding cards ── */
+.finding-cards{display:flex;flex-direction:column;gap:10px;max-width:680px;margin-bottom:24px}
+.finding-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;border-left:3px solid var(--border2)}
+.finding-card.sev-critical{border-left-color:var(--red)}
+.finding-card.sev-high{border-left-color:var(--amber)}
+.finding-card.sev-medium{border-left-color:var(--blue)}
+.finding-card.sev-low{border-left-color:var(--dim)}
+.finding-card.sev-informational{border-left-color:var(--green)}
+.fc-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.fc-sev{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:2px 6px;border-radius:3px}
+.fc-sev.sev-critical{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+.fc-sev.sev-high{background:rgba(227,179,65,.15);color:var(--amber);border:1px solid rgba(227,179,65,.3)}
+.fc-sev.sev-medium{background:rgba(56,139,253,.15);color:var(--blue);border:1px solid rgba(56,139,253,.3)}
+.fc-sev.sev-low{background:var(--border);color:var(--muted);border:1px solid var(--border2)}
+.fc-sev.sev-informational{background:rgba(63,185,80,.1);color:var(--green);border:1px solid rgba(63,185,80,.25)}
+.fc-cat{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.fc-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.fc-explanation{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px}
+.fc-action{font-size:11px;color:var(--text2);background:var(--bg);border-radius:4px;padding:6px 10px;border:1px solid var(--border)}
+.fc-action-label{font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+/* ── Hero status badge ── */
+.hero-status-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.hero-status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+.hsb-blocked{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+.hsb-at_risk{background:rgba(227,179,65,.15);color:var(--amber);border:1px solid rgba(227,179,65,.3)}
+.hsb-ready{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+.hsb-complete{background:rgba(63,185,80,.2);color:var(--green);border:1px solid rgba(63,185,80,.4)}
+.hsb-unknown{background:var(--border);color:var(--muted);border:1px solid var(--border2)}
+.hero-headline{font-size:13px;color:var(--muted);line-height:1.5;max-width:580px;margin-bottom:8px}
+/* ── Replay significance ── */
+.replay-significance{font-size:11px;color:var(--blue);margin-top:4px;line-height:1.5;font-style:italic}
+
 /* ── Next action ── */
 #next-action-box{background:var(--surface);border:1px solid var(--blue-dim);border-left:3px solid var(--blue);border-radius:6px;padding:16px 18px;max-width:560px;margin-top:8px}
 #next-action-label{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
@@ -220,38 +252,38 @@ function delay(ms){{return new Promise(r=>setTimeout(r,ms))}}
 const INSIGHTS = [
   {{
     step:'Step 1 — OEM Intake',
-    text:'RepairGraph accepts OEM repair documentation in any digital format.',
-    detail:'Files are never stored. All processing happens in-memory. No OEM data leaves your system.'
+    text:'Upload OEM repair documents for any vehicle. RepairGraph identifies gaps before work begins.',
+    detail:'Files are processed in-memory and never stored. Missing corrosion, calibration, or materials documents are flagged immediately — before a single bolt is turned.'
   }},
   {{
     step:'Step 2 — Packet Analysis',
-    text:'RepairGraph analyzed your OEM documents and identified {{}}-level procedures, welding specifications, corrosion protection requirements, and material data.',
-    detail:'Document roles are detected using structural heuristics — not keyword matching alone. Confidence scores reflect the strength of evidence found in file names and content.'
+    text:'RepairGraph assessed your OEM packet for completeness, identified document roles, and flagged any missing or low-confidence documents.',
+    detail:'A partial or unclassified packet is a compliance risk. RepairGraph surfaces these gaps so you can resolve them before authorizing work.'
   }},
   {{
     step:'Step 3 — Repair Intelligence',
-    text:'RepairGraph converted static OEM documentation into a live operational model of the repair.',
-    detail:'This includes: spatial topology of every repair zone, a dependency graph of all procedures, a complete workflow state machine, and QA gate requirements derived from OEM specifications.'
+    text:'RepairGraph built a live operational model from your OEM documents — including material classifications, joining requirements, and QA gate dependencies.',
+    detail:'UHSS and HSS zones are automatically identified. Procedures that require OEM-specific joining methods are flagged. No manual data entry required.'
   }},
   {{
     step:'Step 4 — Topology Viewer',
-    text:'RepairGraph knows exactly which parts of the vehicle are involved, in what order they must be repaired, and what dependencies exist between zones.',
-    detail:'Click any region to inspect its workflow state, required procedures, QA gates, and any blockers. Use the timeline to replay the repair event history.'
+    text:'Every repair zone is mapped spatially. Zones with open QA gates, UHSS material, or active blockers are highlighted for immediate attention.',
+    detail:'Click any region to see its material classification, required procedures, open QA gates, and whether it is currently blocked. The topology is derived from OEM structural data.'
   }},
   {{
-    step:'Step 5 — Replay',
-    text:'RepairGraph maintains a complete audit trail of every workflow event — who did what, when, and what changed as a result.',
-    detail:'The replay engine can reconstruct the exact state of the repair at any point in time. This is the foundation for certification, insurance documentation, and quality assurance.'
+    step:'Step 5 — Audit Trail',
+    text:'Every workflow event is recorded with actor, timestamp, and state diff. The audit trail is the basis for insurance, OEM compliance, and re-repair claims.',
+    detail:'Each event explains not just what happened, but why it matters. Blocker resolutions, QA gate closures, and phase completions are all captured with operational context.'
   }},
   {{
-    step:'Step 6 — Intelligence Summary',
-    text:'RepairGraph generated a complete operational model: procedures, dependencies, QA gates, and the exact next action required.',
-    detail:'Every metric shown here was derived automatically from OEM documentation — not manually entered. RepairGraph converts documents into decisions.'
+    step:'Step 6 — Operational Findings',
+    text:'RepairGraph surfaced prioritized operational findings — critical QA holds, material risks, compliance gaps, and next recommended actions.',
+    detail:'Findings are ranked by severity: Critical and High findings require immediate attention. Informational findings confirm progress. No finding requires manual interpretation — each includes a recommended action.'
   }},
   {{
     step:'Step 7 — Export',
-    text:'RepairGraph can export the complete repair record as a portable, self-contained HTML report — suitable for insurance, OEM compliance, or shop management systems.',
-    detail:'All exports are generated on demand. No data is stored. The workflow report, replay log, and intake manifest can each be shared independently.'
+    text:'Every RepairGraph output is a portable, self-contained artifact ready for insurance submission, OEM compliance audit, or shop management integration.',
+    detail:'The Executive Summary leads with operational findings. The Technician Workflow report shows full phase and action detail. The Repair Audit Trail is a timestamped event ledger. No login required to view.'
   }},
 ];
 
@@ -365,6 +397,7 @@ function renderReplay(){{
     const diffText = s.diff_summary && s.diff_summary.changes
       ? s.diff_summary.changes.slice(0,2).map(c=>esc(c)).join(' · ')
       : '';
+    const sig = s.significance||'';
     return `
       <div class="replay-step" id="rs-${{i}}">
         <div class="replay-icon ${{cls}}">${{icon}}</div>
@@ -372,36 +405,49 @@ function renderReplay(){{
           <div class="replay-event-type">${{esc(s.event.event_type.replace(/_/g,' '))}}</div>
           <div class="replay-meta">${{esc(s.event.actor)}} · ${{esc(s.event.target_type)}} · ${{esc(s.event.timestamp.slice(0,19).replace('T',' '))}}</div>
           ${{diffText?`<div class="replay-diff">${{diffText}}</div>`:''}}
+          ${{sig?`<div class="replay-significance">${{esc(sig)}}</div>`:''}}
         </div>
       </div>
     `;
   }}).join('');
 }}
 
-// ── Step 6: Summary cards ─────────────────────────────────────────────────────
+// ── Finding card renderer ─────────────────────────────────────────────────────
+function renderFindingCard(f){{
+  return `
+    <div class="finding-card sev-${{f.severity}}">
+      <div class="fc-header">
+        <span class="fc-sev sev-${{f.severity}}">${{esc(f.severity)}}</span>
+        <span class="fc-cat">${{esc(f.category)}}</span>
+      </div>
+      <div class="fc-title">${{esc(f.title)}}</div>
+      <div class="fc-explanation">${{esc(f.explanation)}}</div>
+      <div class="fc-action">
+        <div class="fc-action-label">Recommended Action</div>
+        ${{esc(f.recommended_action)}}
+      </div>
+    </div>
+  `;
+}}
+
+// ── Step 6: Operational findings ─────────────────────────────────────────────
 function renderSummary(){{
-  const ws = DEMO.workflow.workflow_summary;
+  const insights = DEMO.insights || {{}};
+  const findings = insights.findings || [];
   const sess = DEMO.workflow.session;
   const nextActs = DEMO.workflow.next_actions || [];
   const phases = DEMO.workflow.phases || [];
 
-  el('summary-grid').innerHTML = [
-    {{n:ws.action_count, l:'Procedures', sub:ws.complete_action_count+' complete', c:'c-blue'}},
-    {{n:ws.phase_count, l:'Workflow Phases', sub:'sequential', c:''}},
-    {{n:ws.qa_gate_count, l:'QA Gates', sub:'OEM-derived', c:'c-amber'}},
-    {{n:ws.blocker_count, l:'Dependencies', sub:(ws.blocker_count-ws.open_blocker_count)+' resolved', c:'c-green'}},
-    {{n:ws.zone_count, l:'Repair Zones', sub:'topology-mapped', c:'c-purple'}},
-    {{n:ws.event_count, l:'Events', sub:'in audit trail', c:'c-green'}},
-  ].map(c=>`
-    <div class="intel-card ${{c.c}}">
-      <div class="num">${{c.n}}</div>
-      <div class="lbl">${{esc(c.l)}}</div>
-      <div class="sub">${{esc(c.sub)}}</div>
-    </div>
-  `).join('');
+  // Findings cards
+  const findingEl = el('summary-grid');
+  if(findings.length===0){{
+    findingEl.innerHTML = '<div style="color:var(--muted);font-size:13px">No findings — repair is on track.</div>';
+  }} else {{
+    findingEl.innerHTML = '<div class="finding-cards">' + findings.map(renderFindingCard).join('') + '</div>';
+  }}
 
-  // Next action
-  const nextAct = nextActs[0] || sess.current_phase || '—';
+  // Next action from insights or workflow
+  const nextAct = insights.next_action || nextActs[0] || sess.current_phase || '—';
   el('next-action-text').textContent = nextAct;
 
   // Phases
@@ -656,19 +702,39 @@ async function runIntakeAnimationOnly(){{
   await delay(200);
 }}
 
+// ── Hero: status badge + top findings ────────────────────────────────────────
+function renderHeroInsights(){{
+  const ins = DEMO.insights || {{}};
+  const status = ins.overall_status || 'unknown';
+  const headline = ins.summary_headline || '';
+  const top = ins.top_findings || [];
+  const cls = 'hsb-'+status;
+  const statusLabel = {{
+    blocked:'Blocked',at_risk:'At Risk',ready:'Ready',complete:'Complete',unknown:'Status Unknown'
+  }}[status] || status;
+
+  let html = `
+    <div class="hero-status-row">
+      <span class="hero-status-badge ${{cls}}">${{esc(statusLabel)}}</span>
+    </div>
+    <div class="hero-headline">${{esc(headline)}}</div>
+  `;
+
+  if(top.length>0){{
+    html += '<div class="finding-cards" style="margin-top:16px">' +
+      top.map(renderFindingCard).join('') +
+      '</div>';
+  }}
+  el('hero-status-area').innerHTML = html;
+}}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{{
   renderInsights();
+  renderHeroInsights();
   setupUpload();
   setupScrollObserver();
   el('btn-analyze').addEventListener('click', startAnalysis);
-
-  // Hero stats
-  const ws = DEMO.workflow.workflow_summary;
-  el('hero-stat-actions').textContent = ws.action_count;
-  el('hero-stat-zones').textContent = ws.zone_count;
-  el('hero-stat-qa').textContent = ws.qa_gate_count;
-  el('hero-stat-events').textContent = ws.event_count;
 }});
 """
 
@@ -703,25 +769,8 @@ def build_demo_page_html() -> str:
   <div id="hero">
     <div id="hero-eyebrow">RepairGraph · Platform Demo</div>
     <h1 id="hero-title">OEM repair documents, transformed into workflow intelligence.</h1>
-    <p id="hero-subtitle">RepairGraph converts static repair documentation into a live operational model — complete with spatial topology, dependency graphs, workflow state, and QA gates.</p>
-    <div class="hero-stat-row">
-      <div class="hero-stat">
-        <div class="n" id="hero-stat-actions">{ws["action_count"]}</div>
-        <div class="l">Procedures</div>
-      </div>
-      <div class="hero-stat">
-        <div class="n" id="hero-stat-zones">{ws["zone_count"]}</div>
-        <div class="l">Repair Zones</div>
-      </div>
-      <div class="hero-stat">
-        <div class="n" id="hero-stat-qa">{ws["qa_gate_count"]}</div>
-        <div class="l">QA Gates</div>
-      </div>
-      <div class="hero-stat">
-        <div class="n" id="hero-stat-events">{ws["event_count"]}</div>
-        <div class="l">Events</div>
-      </div>
-    </div>
+    <p id="hero-subtitle">RepairGraph converts static repair documentation into a live operational model — surfacing critical risks, compliance gaps, and next actions automatically.</p>
+    <div id="hero-status-area"></div>
   </div>
 
   <!-- Step 1: OEM Intake -->
@@ -815,12 +864,12 @@ def build_demo_page_html() -> str:
     <div class="step-connector-line"></div>
   </div>
 
-  <!-- Step 6: Intelligence Summary -->
+  <!-- Step 6: Operational Findings -->
   <div class="step hidden" id="step-summary">
     <div class="step-inner" style="max-width:100%">
-      <div class="step-eyebrow"><span class="step-num">6</span> Repair Intelligence</div>
-      <h2 class="step-title">Everything RepairGraph knows about this repair</h2>
-      <p class="step-desc">All derived automatically from OEM documentation — not manually entered.</p>
+      <div class="step-eyebrow"><span class="step-num">6</span> Operational Findings</div>
+      <h2 class="step-title">Prioritized findings — ranked by severity</h2>
+      <p class="step-desc">Every finding was derived automatically from OEM documentation, workflow state, material data, and QA gate status. Critical and High findings require immediate action before the repair can advance.</p>
       <div id="summary-grid"></div>
       <div id="next-action-box">
         <div id="next-action-label">Next Recommended Action</div>
@@ -844,20 +893,25 @@ def build_demo_page_html() -> str:
       <h2 class="step-title">Take it with you</h2>
       <p class="step-desc">Every RepairGraph output is a self-contained, portable artifact — no login required to view, no data stored on our servers.</p>
       <div id="export-links">
+        <a href="/internal/state/accord/report?view=executive" target="_blank" class="export-link">
+          <span class="el-icon">🎯</span>
+          <span class="el-label">Executive Summary</span>
+          <span class="el-sub">Prioritized findings, risk level, next action</span>
+        </a>
         <a href="/internal/state/accord/report?view=workflow" target="_blank" class="export-link">
           <span class="el-icon">📋</span>
-          <span class="el-label">Workflow Report</span>
-          <span class="el-sub">Full state, phases, QA gates</span>
+          <span class="el-label">Technician Workflow</span>
+          <span class="el-sub">Full phases, procedures, QA gates</span>
         </a>
         <a href="/internal/state/accord/report?view=replay" target="_blank" class="export-link">
           <span class="el-icon">⏱</span>
-          <span class="el-label">Replay Report</span>
-          <span class="el-sub">Event-by-event state history</span>
+          <span class="el-label">Repair Audit Trail</span>
+          <span class="el-sub">Timestamped event ledger with state diffs</span>
         </a>
         <a href="/internal/intake" target="_blank" class="export-link">
           <span class="el-icon">📥</span>
-          <span class="el-label">Intake Analyzer</span>
-          <span class="el-sub">Upload and classify OEM docs</span>
+          <span class="el-label">OEM Intake Analysis</span>
+          <span class="el-sub">Upload and classify OEM documents</span>
         </a>
         <a href="/internal/state/accord/topology-viewer" target="_blank" class="export-link">
           <span class="el-icon">🔍</span>
@@ -866,8 +920,8 @@ def build_demo_page_html() -> str:
         </a>
         <a href="/internal/state/accord/visualization" target="_blank" class="export-link">
           <span class="el-icon">📊</span>
-          <span class="el-label">Visualization JSON</span>
-          <span class="el-sub">Machine-readable payload</span>
+          <span class="el-label">Operational Model</span>
+          <span class="el-sub">Machine-readable repair payload</span>
         </a>
       </div>
     </div>

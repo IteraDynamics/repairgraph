@@ -17,6 +17,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from repairgraph.insights.engine import build_insight_payload
+from repairgraph.insights.replay_enrichment import enrich_replay_step
 from repairgraph.intake.classify import classify_intake_packet, summarize_intake_manifest
 from repairgraph.state.blockers import summarize_blockers
 from repairgraph.state.demo import (
@@ -138,7 +140,7 @@ def build_workflow_demo_payload() -> dict[str, Any]:
     for i, (event, snap) in enumerate(zip(events, snapshots)):
         diff = build_state_diff(prev, snap)
         diff_summary = summarize_state_diff(diff)
-        replay_steps.append({
+        raw_step = {
             "step": i + 1,
             "event": _serialize_event(event),
             "state_summary": {
@@ -148,7 +150,8 @@ def build_workflow_demo_payload() -> dict[str, Any]:
                 "active_phases": [p.name for p in snap.phases if p.status == "in_progress"],
             },
             "diff_summary": diff_summary,
-        })
+        }
+        replay_steps.append(enrich_replay_step(raw_step))
         prev = snap
 
     timeline_summary = summarize_timeline(projected)
@@ -212,25 +215,37 @@ def build_workflow_demo_payload() -> dict[str, Any]:
     }
 
 
+def build_insight_demo_payload() -> dict[str, Any]:
+    """Build InsightPayload for the Accord demo state."""
+    from repairgraph.state.demo import build_accord_projected_state
+    projected = build_accord_projected_state()
+    intake = build_intake_demo_payload()
+    payload = build_insight_payload(projected, manifest_dict=intake)
+    return payload.to_dict()
+
+
 def build_full_demo_payload() -> dict[str, Any]:
-    """Assemble the complete demo payload combining intake + workflow.
+    """Assemble the complete demo payload combining intake + workflow + insights.
 
     This is the single data source for the demo page. All business logic
-    is delegated to intake and state modules.
+    is delegated to intake, state, and insight modules.
     """
     intake = build_intake_demo_payload()
     workflow = build_workflow_demo_payload()
+    insights = build_insight_demo_payload()
     return {
         "schema_name": "repairgraph.demo.full",
         "generated_by": _GENERATED_BY,
         "advisory": True,
         "intake": intake,
         "workflow": workflow,
+        "insights": insights,
         "export_links": {
             "workflow_report": "/internal/state/accord/report?view=workflow",
             "replay_report": "/internal/state/accord/report?view=replay",
             "intake_page": "/internal/intake",
             "visualization_json": "/internal/state/accord/visualization",
             "topology_viewer": "/internal/state/accord/topology-viewer",
+            "executive_summary": "/internal/state/accord/report?view=executive",
         },
     }
