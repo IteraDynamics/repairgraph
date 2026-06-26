@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from repairgraph.api.demo_routes import router as demo_router
 from repairgraph.api.intake_routes import router as intake_router
 from repairgraph.api.state_routes import router as state_router
 
@@ -19,11 +20,13 @@ app = FastAPI(
     title="RepairGraph Internal API",
     description=(
         "Internal demo endpoints for RepairGraph state workflow, AR payload, "
-        "and OEM intake intelligence. Not a production API surface. "
-        "No authentication required. All outputs are advisory."
+        "OEM intake intelligence, and the golden-path demo experience. "
+        "Not a production API surface. No authentication required. "
+        "All outputs are advisory."
     ),
     version="0.1.0",
 )
 
+app.include_router(demo_router)
 app.include_router(state_router)
 app.include_router(intake_router)

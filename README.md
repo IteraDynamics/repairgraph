@@ -247,6 +247,18 @@ JSON-serializable contract for downstream clients.
 This is a payload contract for downstream AR/workflow clients, not a renderer or
 certification system.
 
+### Golden Path Demo
+
+The fastest way to understand what RepairGraph does:
+
+```bash
+python -m uvicorn repairgraph.api.app:app --reload
+```
+
+Open: **http://localhost:8000/internal/demo**
+
+A step-by-step guided experience — OEM intake → packet analysis → repair intelligence → interactive topology viewer → event replay → export. No presenter required. See [docs/GOLDEN_PATH_DEMO.md](docs/GOLDEN_PATH_DEMO.md) for full documentation.
+
 ### Internal State API
 
 RepairGraph exposes its state workflow and AR payload intelligence through a
@@ -263,6 +275,8 @@ uvicorn repairgraph.api.app:app --reload
 
 | Endpoint | Description |
 |---|---|
+| `GET /internal/demo` | **Golden path demo** — end-to-end guided experience (HTML) |
+| `GET /internal/demo/payload` | Demo orchestration payload (JSON) |
 | `GET /internal/state/accord/initial` | Initial (un-projected) Accord RepairState |
 | `GET /internal/state/accord/projected` | Projected Accord state after deterministic demo event ledger |
 | `GET /internal/state/accord/ar-payload` | AR workflow payload for the projected Accord state |
