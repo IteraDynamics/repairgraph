@@ -281,62 +281,6 @@ const INTAKE_STAGES = [
   'Determining readiness...',
 ];
 
-async function runIntakeAnimation(){{
-  const container = el('intake-stages');
-  const resultEl = el('intake-result');
-  container.innerHTML = INTAKE_STAGES.map((s,i)=>`
-    <div class="stage-row" id="stage-${{i}}">
-      <div class="stage-dot" id="stage-dot-${{i}}"></div>
-      <div class="stage-label" id="stage-lbl-${{i}}">${{esc(s)}}</div>
-    </div>
-  `).join('');
-
-  for(let i=0;i<INTAKE_STAGES.length;i++){{
-    const dot=el('stage-dot-'+i), lbl=el('stage-lbl-'+i);
-    dot.className='stage-dot active';lbl.className='stage-label active';
-    await delay(420);
-    dot.className='stage-dot done';lbl.className='stage-label done';
-  }}
-
-  await delay(200);
-  renderIntakeResult();
-  show('intake-result');
-  activateInsight(1);
-}}
-
-function renderIntakeResult(){{
-  const p = DEMO.intake;
-  const dp = p.detected_packet;
-  const conf = Math.round((dp.confidence||0)*100);
-  const readinessBadge = dp.confidence>0.75?'b-green':(dp.confidence>0.4?'b-amber':'b-red');
-  const readinessLabel = p.readiness;
-
-  const roles = (dp.detected_roles||[]).map(r=>`<span class="role-chip">${{esc(r)}}</span>`).join('');
-  const warnings = (p.diagnostics||[]).filter(d=>d.severity==='warning').slice(0,3).map(d=>`<div class="warn-item">${{esc(d.message)}}</div>`).join('');
-
-  el('intake-result').innerHTML = `
-    <div class="result-card fade-in">
-      <div class="result-card-title">Packet detected</div>
-      <div class="kv-grid">
-        <span class="kv-key">OEM</span><span class="kv-val">${{esc(dp.oem||'—')}}</span>
-        <span class="kv-key">Model</span><span class="kv-val">${{esc(dp.model||'—')}}</span>
-        <span class="kv-key">Year</span><span class="kv-val">${{esc(dp.year||'—')}}</span>
-        <span class="kv-key">Operation</span><span class="kv-val">${{esc(dp.operation||'—')}}</span>
-        <span class="kv-key">Files</span><span class="kv-val">${{esc(p.file_count)}} files classified</span>
-        <span class="kv-key">Readiness</span><span class="kv-val"><span class="badge ${{readinessBadge}}">${{esc(readinessLabel)}}</span></span>
-        <span class="kv-key">Confidence</span>
-        <span class="kv-val">
-          ${{conf}}%
-          <div class="conf-bar"><div class="conf-fill" style="width:${{conf}}%;background:${{conf>75?'var(--green)':conf>40?'var(--amber)':'var(--red)'}}"></div></div>
-        </span>
-        <span class="kv-key">Roles</span>
-        <span class="kv-val"><div class="role-chips">${{roles||'<span class="kv-val" style="color:var(--muted)">none detected</span>'}}</div></span>
-      </div>
-      ${{warnings?'<div style="margin-top:12px">'+warnings+'</div>':''}}
-    </div>
-  `;
-}}
-
 // ── Step 3: Intelligence animation ───────────────────────────────────────────
 const INTEL_STAGES = [
   'Building topology...',
@@ -347,7 +291,7 @@ const INTEL_STAGES = [
   'Preparing visualization...',
 ];
 
-async function runIntelAnimation(){{
+async function runIntelAnimation(intakeData){{
   activateInsight(2);
   const container = el('intel-stages');
   container.innerHTML = INTEL_STAGES.map((s,i)=>`
@@ -365,6 +309,34 @@ async function runIntelAnimation(){{
   }}
 
   await delay(200);
+
+  // Show the intel result card — bridge from their vehicle to the reference workflow
+  const dp = (intakeData||{{}}).detected_packet||{{}};
+  const detectedLabel = [dp.year, dp.oem, dp.model].filter(Boolean).join(' ') || 'your vehicle';
+  const refLabel = 'Honda 2025 Accord';
+  const isAccord = (dp.oem||'').toLowerCase().includes('honda') && (dp.model||'').toLowerCase().includes('accord');
+  const bridgeNote = isAccord
+    ? ''
+    : `<div style="margin-top:12px;padding:10px 12px;background:var(--accent-dim);border:1px solid var(--blue-dim);border-radius:5px;font-size:12px;color:var(--blue)">
+        <strong>Note:</strong> Intake complete for ${{esc(detectedLabel)}}. Displaying reference workflow using
+        <strong>${{refLabel}}</strong> (the RepairGraph seed dataset) to demonstrate the full pipeline.
+        When your vehicle's OEM procedure is normalized, it will appear here automatically.
+       </div>`;
+
+  el('intel-result').innerHTML = `
+    <div class="result-card fade-in">
+      <div class="result-card-title">Repair model ready — ${{esc(refLabel)}}</div>
+      <div class="kv-grid">
+        <span class="kv-key">Operation</span><span class="kv-val">${{esc(DEMO.workflow.session.operation||'—')}}</span>
+        <span class="kv-key">Phases</span><span class="kv-val">${{DEMO.workflow.workflow_summary.phase_count}} workflow phases</span>
+        <span class="kv-key">Actions</span><span class="kv-val">${{DEMO.workflow.workflow_summary.action_count}} procedures mapped</span>
+        <span class="kv-key">QA Gates</span><span class="kv-val">${{DEMO.workflow.workflow_summary.qa_gate_count}} OEM-derived checks</span>
+        <span class="kv-key">Zones</span><span class="kv-val">${{DEMO.workflow.workflow_summary.zone_count}} spatial zones</span>
+        <span class="kv-key">Dependencies</span><span class="kv-val">${{DEMO.workflow.workflow_summary.blocker_count}} procedural dependencies</span>
+      </div>
+      ${{bridgeNote}}
+    </div>
+  `;
   show('intel-result');
   show('step-viewer');
   show('conn-viewer');
@@ -478,48 +450,208 @@ function setupScrollObserver(){{
   }});
 }}
 
+// ── Upload state ─────────────────────────────────────────────────────────────
+let _uploadedFiles = [];       // real File objects from the browser
+let _usingDemoPacket = false;  // true when user clicked "Use Demo Packet"
+let _liveIntakeData = null;    // result from POST /internal/intake/classify
+
 // ── Upload handling ───────────────────────────────────────────────────────────
 function setupUpload(){{
   const zone = el('drop-zone');
   const fileInput = el('file-input');
-  const fileList = el('file-list');
 
   zone.addEventListener('dragover', e=>{{e.preventDefault();zone.classList.add('drag-over')}});
   zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
   zone.addEventListener('drop',e=>{{
     e.preventDefault();zone.classList.remove('drag-over');
-    handleFiles(Array.from(e.dataTransfer.files));
+    setFiles(Array.from(e.dataTransfer.files));
   }});
   zone.addEventListener('click',()=>fileInput.click());
-  fileInput.addEventListener('change',()=>handleFiles(Array.from(fileInput.files)));
+  fileInput.addEventListener('change',()=>setFiles(Array.from(fileInput.files)));
 
   el('btn-demo').addEventListener('click', useDemoPacket);
 }}
 
-function handleFiles(files){{
+function setFiles(files){{
+  _uploadedFiles = files;
+  _usingDemoPacket = false;
+  el('demo-packet-note').style.display='none';
   el('file-list').innerHTML = files.map(f=>`<span class="file-chip">📄 ${{esc(f.name)}}</span>`).join('');
   el('btn-analyze').disabled = files.length===0;
 }}
 
 function useDemoPacket(){{
+  _uploadedFiles = [];
+  _usingDemoPacket = true;
   const p = DEMO.intake;
   el('file-list').innerHTML = (p.files||[]).map(f=>`<span class="file-chip">📄 ${{esc(f.filename)}}</span>`).join('');
   el('btn-analyze').disabled = false;
   el('demo-packet-note').style.display='';
 }}
 
+// ── Live intake classification ────────────────────────────────────────────────
+async function classifyRealFiles(files){{
+  const formData = new FormData();
+  for(const f of files) formData.append('files', f, f.name);
+
+  const resp = await fetch('/internal/intake/classify', {{
+    method:'POST',
+    body: formData,
+  }});
+  if(!resp.ok){{
+    const txt = await resp.text();
+    throw new Error('Classification failed (' + resp.status + '): ' + txt.slice(0,200));
+  }}
+  return resp.json();
+}}
+
+// ── Map live API response → the shape renderIntakeResult() expects ─────────────
+function normalizeLiveIntake(apiData){{
+  // POST /internal/intake/classify returns slightly different keys than the
+  // embedded DEMO.intake payload — flatten them to a common shape.
+  const dp = apiData.detected_packet || {{}};
+  return {{
+    file_count: (apiData.files||[]).length,
+    readiness: apiData.readiness || 'unknown',
+    detected_packet: {{
+      oem:       dp.detected_oem || null,
+      model:     dp.detected_model || null,
+      year:      dp.detected_year || null,
+      operation: dp.detected_operation || null,
+      confidence: dp.oem_confidence || 0,
+      detected_roles: dp.detected_roles || [],
+    }},
+    files: (apiData.files||[]).map(f=>({{
+      filename: f.filename,
+      document_role: f.document_role,
+      supporting_roles: f.supporting_roles||[],
+      confidence: f.confidence,
+    }})),
+    diagnostics: (apiData.diagnostics||[]).map(d=>({{
+      code: d.code,
+      severity: d.severity,
+      message: d.message,
+    }})),
+  }};
+}}
+
+// ── renderIntakeResult — accepts an intake payload object ─────────────────────
+function renderIntakeResult(intakeData){{
+  const p = intakeData;
+  const dp = p.detected_packet;
+  const conf = Math.round((dp.confidence||0)*100);
+  const readinessBadge = dp.confidence>0.75?'b-green':(dp.confidence>0.4?'b-amber':'b-red');
+  const readinessLabel = p.readiness;
+
+  const roles = (dp.detected_roles||[]).map(r=>`<span class="role-chip">${{esc(r)}}</span>`).join('');
+  const warnings = (p.diagnostics||[]).filter(d=>d.severity==='warning').slice(0,3)
+    .map(d=>`<div class="warn-item">${{esc(d.message)}}</div>`).join('');
+
+  // Per-file classification table
+  const fileRows = (p.files||[]).map(f=>{{
+    const confPct = Math.round((f.confidence||0)*100);
+    const confColor = confPct>75?'var(--green)':confPct>40?'var(--amber)':'var(--red)';
+    return `<tr>
+      <td style="font-family:monospace;font-size:11px;color:var(--text2)">${{esc(f.filename)}}</td>
+      <td><span class="role-chip" style="font-size:9px">${{esc(f.document_role)}}</span></td>
+      <td style="font-size:11px;color:${{confColor}}">${{confPct}}%</td>
+    </tr>`;
+  }}).join('');
+
+  el('intake-result').innerHTML = `
+    <div class="result-card fade-in">
+      <div class="result-card-title">Packet detected</div>
+      <div class="kv-grid">
+        <span class="kv-key">OEM</span><span class="kv-val">${{esc(dp.oem||'—')}}</span>
+        <span class="kv-key">Model</span><span class="kv-val">${{esc(dp.model||'—')}}</span>
+        <span class="kv-key">Year</span><span class="kv-val">${{esc(dp.year||'—')}}</span>
+        <span class="kv-key">Operation</span><span class="kv-val">${{esc(dp.operation||'—')}}</span>
+        <span class="kv-key">Files</span><span class="kv-val">${{esc(p.file_count)}} files classified</span>
+        <span class="kv-key">Readiness</span><span class="kv-val"><span class="badge ${{readinessBadge}}">${{esc(readinessLabel)}}</span></span>
+        <span class="kv-key">Confidence</span>
+        <span class="kv-val">
+          ${{conf}}%
+          <div class="conf-bar"><div class="conf-fill" style="width:${{conf}}%;background:${{conf>75?'var(--green)':conf>40?'var(--amber)':'var(--red)'}}"></div></div>
+        </span>
+        <span class="kv-key">Roles</span>
+        <span class="kv-val"><div class="role-chips">${{roles||'<span style="color:var(--muted)">none detected</span>'}}</div></span>
+      </div>
+      ${{fileRows?`<div style="margin-top:16px">
+        <div style="font-size:10px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Per-file classification</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 8px;color:var(--dim);font-size:10px;font-weight:600;border-bottom:1px solid var(--border)">File</th>
+            <th style="text-align:left;padding:4px 8px;color:var(--dim);font-size:10px;font-weight:600;border-bottom:1px solid var(--border)">Role</th>
+            <th style="text-align:left;padding:4px 8px;color:var(--dim);font-size:10px;font-weight:600;border-bottom:1px solid var(--border)">Conf</th>
+          </tr></thead>
+          <tbody>${{fileRows}}</tbody>
+        </table>
+      </div>`:''}}
+      ${{warnings?'<div style="margin-top:12px">'+warnings+'</div>':''}}
+    </div>
+  `;
+}}
+
 async function startAnalysis(){{
   hide('upload-card');
   show('step-analysis');
   show('conn-analysis');
-  await runIntakeAnimation();
+
+  // Run animation first, then (for real uploads) fire the API in parallel
+  const classifyPromise = (!_usingDemoPacket && _uploadedFiles.length > 0)
+    ? classifyRealFiles(_uploadedFiles)
+    : Promise.resolve(null);
+
+  await runIntakeAnimationOnly();
+
+  // Now resolve the classification
+  let intakeData;
+  try {{
+    const liveResult = await classifyPromise;
+    if(liveResult) {{
+      _liveIntakeData = normalizeLiveIntake(liveResult);
+      intakeData = _liveIntakeData;
+    }} else {{
+      intakeData = DEMO.intake;
+    }}
+  }} catch(err) {{
+    // Show error but continue demo with embedded data
+    intakeData = DEMO.intake;
+    console.error('Live classify failed:', err);
+    el('intake-error').textContent = 'Classification API error: ' + err.message + ' — showing demo data.';
+    el('intake-error').style.display = '';
+  }}
+
+  renderIntakeResult(intakeData);
+  show('intake-result');
+  activateInsight(1);
+
   show('step-intelligence');
   show('conn-intelligence');
   await delay(600);
-  await runIntelAnimation();
+  await runIntelAnimation(intakeData);
   renderReplay();
   renderSummary();
   activateInsight(5);
+}}
+
+// Renamed: animation-only, no longer calls renderIntakeResult
+async function runIntakeAnimationOnly(){{
+  const container = el('intake-stages');
+  container.innerHTML = INTAKE_STAGES.map((s,i)=>`
+    <div class="stage-row" id="stage-${{i}}">
+      <div class="stage-dot" id="stage-dot-${{i}}"></div>
+      <div class="stage-label" id="stage-lbl-${{i}}">${{esc(s)}}</div>
+    </div>
+  `).join('');
+
+  for(let i=0;i<INTAKE_STAGES.length;i++){{
+    const dot=el('stage-dot-'+i), lbl=el('stage-lbl-'+i);
+    dot.className='stage-dot active';lbl.className='stage-label active';
+    await delay(420);
+    dot.className='stage-dot done';lbl.className='stage-label done';
+  }}
+  await delay(200);
 }}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -606,7 +738,7 @@ def build_demo_page_html() -> str:
         <div class="or-divider">or</div>
         <button class="btn btn-primary" id="btn-demo">Use Demo Packet</button>
         <p id="demo-packet-note" style="display:none;font-size:11px;color:var(--muted);margin-top:8px">
-          Using synthetic demo packet — Toyota Camry quarter panel repair documentation.
+          Using built-in demo packet — synthetic OEM repair documentation for demonstration purposes.
         </p>
         <div id="file-list" style="margin-top:10px"></div>
         <div class="btn-row">
@@ -627,6 +759,7 @@ def build_demo_page_html() -> str:
       <h2 class="step-title">Reading your documents</h2>
       <p class="step-desc">RepairGraph is analyzing document structure, detecting OEM identity, classifying each file by role, and assessing readiness for normalization.</p>
       <div class="progress-stages" id="intake-stages"></div>
+      <div id="intake-error" style="display:none;font-size:12px;color:var(--amber);margin-bottom:10px;padding:8px 12px;background:rgba(227,179,65,.1);border-radius:4px;border:1px solid rgba(227,179,65,.3)"></div>
       <div id="intake-result"></div>
     </div>
   </div>
@@ -642,19 +775,7 @@ def build_demo_page_html() -> str:
       <h2 class="step-title">Building your operational model</h2>
       <p class="step-desc">RepairGraph is constructing the repair topology, mapping every zone and dependency, initializing the workflow state machine, and generating the event replay engine.</p>
       <div class="progress-stages" id="intel-stages"></div>
-      <div id="intel-result" class="hidden">
-        <div class="result-card fade-in">
-          <div class="result-card-title">Repair model ready — {html.escape(str(sess["oem"]) + " " + str(sess["year"]) + " " + str(sess["model"]))}</div>
-          <div class="kv-grid">
-            <span class="kv-key">Operation</span><span class="kv-val">{html.escape(str(sess.get("operation","—")))}</span>
-            <span class="kv-key">Phases</span><span class="kv-val">{ws["phase_count"]} workflow phases</span>
-            <span class="kv-key">Actions</span><span class="kv-val">{ws["action_count"]} procedures mapped</span>
-            <span class="kv-key">QA Gates</span><span class="kv-val">{ws["qa_gate_count"]} OEM-derived checks</span>
-            <span class="kv-key">Zones</span><span class="kv-val">{ws["zone_count"]} spatial zones</span>
-            <span class="kv-key">Dependencies</span><span class="kv-val">{ws["blocker_count"]} procedural dependencies</span>
-          </div>
-        </div>
-      </div>
+      <div id="intel-result" class="hidden"></div>
     </div>
   </div>
 
