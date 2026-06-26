@@ -20,6 +20,15 @@ from repairgraph.viewer.topology_payload import build_topology_viewer_payload
 _GENERATED_BY = "repairgraph.viewer.topology_viewer"
 
 
+_BODY_PATH = (
+    "M 26,258 C 12,256 8,242 8,220 L 8,164 C 8,152 14,142 28,134 "
+    "L 48,112 L 94,86 L 174,78 L 170,38 L 642,38 "
+    "C 660,38 672,46 678,58 L 700,78 L 754,78 "
+    "C 774,78 782,90 782,110 L 782,178 "
+    "C 782,200 774,218 760,230 L 748,258 Z"
+)
+
+
 def _svg_vehicle(regions_json_var: str = "REGIONS") -> str:
     """Return the SVG vehicle silhouette with interactive regions."""
     rects = []
@@ -55,57 +64,84 @@ def _svg_vehicle(regions_json_var: str = "REGIONS") -> str:
 
     all_rects = "\n".join(rects)
     all_labels = "\n".join(labels)
+    body = _BODY_PATH
 
     return f"""<svg id="vehicle-svg" viewBox="0 0 790 310" xmlns="http://www.w3.org/2000/svg"
      style="width:100%;max-width:860px;display:block;margin:0 auto;">
+  <defs>
+    <!-- Clips all region panels to the sedan body silhouette -->
+    <clipPath id="body-clip">
+      <path d="{body}"/>
+    </clipPath>
+  </defs>
+
   <!-- Ground shadow -->
-  <ellipse cx="420" cy="300" rx="368" ry="9" fill="#000" opacity="0.22" pointer-events="none"/>
-  <!-- Car body silhouette (sedan profile) -->
-  <path d="M 26,254
-    C 12,252 8,238 8,218
-    L 8,166
-    C 8,154 14,144 28,136
-    L 48,114
-    L 94,86
-    L 174,78
-    L 200,38
-    L 642,38
-    C 660,38 672,46 678,58
-    L 700,78
-    L 754,78
-    C 774,78 782,90 782,108
-    L 782,178
-    C 782,198 774,216 760,228
-    L 748,254
-    Z"
-    fill="#141824" stroke="#2d3a4e" stroke-width="1.5"/>
-  <!-- Body character line -->
-  <line x1="30" y1="138" x2="752" y2="138"
-    stroke="#1e2a3a" stroke-width="1" opacity="0.7" pointer-events="none"/>
-  <!-- Windshield glass (angled) -->
-  <polygon points="176,78 202,78 202,40 196,40"
-    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
-  <!-- Front door glass -->
-  <rect x="204" y="40" width="148" height="36" rx="3"
-    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
-  <!-- Rear door glass -->
-  <rect x="370" y="40" width="118" height="36" rx="3"
-    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
-  <!-- Quarter glass -->
-  <rect x="506" y="40" width="134" height="36" rx="3"
-    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
-  <!-- Rear glass (angled) -->
-  <polygon points="642,38 648,38 672,60 700,78 692,78 670,62 648,40"
-    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
-  <!-- Repair regions (interactive) -->
+  <ellipse cx="420" cy="302" rx="366" ry="8" fill="#000" opacity="0.28" pointer-events="none"/>
+
+  <!-- Body fill (shows through gaps between panels) -->
+  <path d="{body}" fill="#0f131c" stroke="none"/>
+
+  <!-- Window glass base layer (behind panel regions) -->
+  <polygon points="174,78 202,78 202,38 170,38" fill="#09121e" pointer-events="none"/>
+  <rect x="202" y="38" width="152" height="40" fill="#09121e" pointer-events="none"/>
+  <rect x="368" y="38" width="122" height="40" fill="#09121e" pointer-events="none"/>
+  <rect x="504" y="38" width="140" height="40" fill="#09121e" pointer-events="none"/>
+  <polygon points="642,38 680,60 700,78 694,78 676,62 648,38" fill="#09121e" pointer-events="none"/>
+
+  <!-- Repair region panels (clipped to body shape) -->
+  <g clip-path="url(#body-clip)">
 {all_rects}
+  </g>
+
+  <!-- Window glass overlays — dark tinted, pointer-events:none so clicks pass through -->
+  <polygon points="174,78 202,78 202,40 171,40"
+    fill="#0b1828" stroke="#16283e" stroke-width="0.75" opacity="0.92" pointer-events="none"/>
+  <rect x="204" y="40" width="146" height="36" rx="3"
+    fill="#0b1828" stroke="#16283e" stroke-width="0.75" opacity="0.92" pointer-events="none"/>
+  <rect x="370" y="40" width="118" height="36" rx="3"
+    fill="#0b1828" stroke="#16283e" stroke-width="0.75" opacity="0.92" pointer-events="none"/>
+  <rect x="506" y="40" width="134" height="36" rx="2"
+    fill="#0b1828" stroke="#16283e" stroke-width="0.75" opacity="0.92" pointer-events="none"/>
+  <polygon points="642,38 680,62 700,78 694,78 674,64 648,40"
+    fill="#0b1828" stroke="#16283e" stroke-width="0.75" opacity="0.92" pointer-events="none"/>
+
+  <!-- Body outline drawn on top for clean car-shaped edges -->
+  <path d="{body}" fill="none" stroke="#3a526e" stroke-width="1.5"/>
+
+  <!-- Headlight cluster (front nose area) -->
+  <polygon points="50,112 78,88 88,92 84,118 56,120"
+    fill="#0d1e30" stroke="#1e3852" stroke-width="1" pointer-events="none"/>
+  <ellipse cx="69" cy="104" rx="9" ry="7"
+    fill="#1a3050" opacity="0.75" pointer-events="none"/>
+
+  <!-- Taillight cluster (rear face) -->
+  <polygon points="754,94 782,94 782,162 750,162"
+    fill="#1c0606" stroke="#421010" stroke-width="1" pointer-events="none"/>
+  <rect x="757" y="98" width="23" height="58" rx="2"
+    fill="#140404" stroke="#300808" stroke-width="0.5" pointer-events="none"/>
+
+  <!-- Door handles -->
+  <rect x="308" y="142" width="24" height="7" rx="3.5"
+    fill="#1c2a3c" stroke="#2c3e54" stroke-width="1" pointer-events="none"/>
+  <rect x="462" y="142" width="24" height="7" rx="3.5"
+    fill="#1c2a3c" stroke="#2c3e54" stroke-width="1" pointer-events="none"/>
+
+  <!-- Side mirror -->
+  <polygon points="190,100 212,95 218,108 194,113"
+    fill="#1a2434" stroke="#263648" stroke-width="1" pointer-events="none"/>
+
+  <!-- Body character line -->
+  <line x1="30" y1="136" x2="752" y2="136"
+    stroke="#1c2c40" stroke-width="1" opacity="0.65" pointer-events="none"/>
+
   <!-- Wheels -->
-  <ellipse cx="132" cy="282" rx="40" ry="24" fill="#0e1118" stroke="#374151" stroke-width="1.5"/>
-  <ellipse cx="132" cy="282" rx="28" ry="17" fill="#0a0d12" stroke="#4b5563" stroke-width="1"/>
-  <ellipse cx="132" cy="282" rx="12" ry="7" fill="#141824" stroke="#6b7280" stroke-width="1"/>
-  <ellipse cx="708" cy="282" rx="40" ry="24" fill="#0e1118" stroke="#374151" stroke-width="1.5"/>
-  <ellipse cx="708" cy="282" rx="28" ry="17" fill="#0a0d12" stroke="#4b5563" stroke-width="1"/>
-  <ellipse cx="708" cy="282" rx="12" ry="7" fill="#141824" stroke="#6b7280" stroke-width="1"/>
+  <ellipse cx="132" cy="282" rx="40" ry="24" fill="#0d1016" stroke="#374151" stroke-width="1.5"/>
+  <ellipse cx="132" cy="282" rx="27" ry="16" fill="#090c10" stroke="#4b5563" stroke-width="1"/>
+  <ellipse cx="132" cy="282" rx="11" ry="7"  fill="#141824" stroke="#6b7280" stroke-width="1"/>
+  <ellipse cx="708" cy="282" rx="40" ry="24" fill="#0d1016" stroke="#374151" stroke-width="1.5"/>
+  <ellipse cx="708" cy="282" rx="27" ry="16" fill="#090c10" stroke="#4b5563" stroke-width="1"/>
+  <ellipse cx="708" cy="282" rx="11" ry="7"  fill="#141824" stroke="#6b7280" stroke-width="1"/>
+
   <!-- Region labels -->
 {all_labels}
 </svg>"""
