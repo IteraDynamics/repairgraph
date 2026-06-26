@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from repairgraph.api.demo_routes import router as demo_router
 from repairgraph.api.intake_routes import router as intake_router
 from repairgraph.api.state_routes import router as state_router
+from repairgraph.review.routes import router as review_router
 
 app = FastAPI(
     title="RepairGraph Internal API",
@@ -27,6 +28,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.include_router(review_router)
 app.include_router(demo_router)
 app.include_router(state_router)
 app.include_router(intake_router)

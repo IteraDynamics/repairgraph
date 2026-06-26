@@ -57,6 +57,7 @@ RepairGraph v0.1 covers a narrow seed domain:
 src/repairgraph/
   core/              # OperationalModel, RepairGraphCompiler, DomainAdapter interface
   adapters/          # CollisionDomainAdapter (and future domain adapters)
+  review/            # Review Repair — collision product front door (GET /internal/review)
   extract/           # Text extraction pipeline (draft JSON from OEM text)
   graph/             # Graph builders and exporters
   topology/          # Spatial repair topology and visualization exports
@@ -84,6 +85,23 @@ schemas/
 docs/
 tests/
 ```
+
+## Review Repair — collision product front door
+
+`GET /internal/review` returns a self-contained HTML page that answers
+in under 30 seconds:
+
+- Can this repair proceed?
+- What is blocking it?
+- What matters most?
+- What is missing?
+- What should happen next?
+- What evidence supports those conclusions?
+
+It consumes the `OperationalModel` via the `RepairGraphCompiler`. No CDN, no frameworks, no external JS.
+See [docs/REVIEW_REPAIR.md](docs/REVIEW_REPAIR.md) for architecture details.
+
+RepairGraph works with repair information supplied by the shop. It does not replace OEM procedures or distribute licensed repair data. All outputs are advisory and require qualified technician review against OEM procedures.
 
 ## Milestones
 
