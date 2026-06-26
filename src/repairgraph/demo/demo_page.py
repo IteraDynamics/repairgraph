@@ -389,7 +389,7 @@ function renderSummary(){{
     {{n:ws.action_count, l:'Procedures', sub:ws.complete_action_count+' complete', c:'c-blue'}},
     {{n:ws.phase_count, l:'Workflow Phases', sub:'sequential', c:''}},
     {{n:ws.qa_gate_count, l:'QA Gates', sub:'OEM-derived', c:'c-amber'}},
-    {{n:ws.blocker_count, l:'Dependencies', sub:ws.open_blocker_count+' open', c:ws.open_blocker_count>0?'c-red':'c-green'}},
+    {{n:ws.blocker_count, l:'Dependencies', sub:(ws.blocker_count-ws.open_blocker_count)+' resolved', c:'c-green'}},
     {{n:ws.zone_count, l:'Repair Zones', sub:'topology-mapped', c:'c-purple'}},
     {{n:ws.event_count, l:'Events', sub:'in audit trail', c:'c-green'}},
   ].map(c=>`
@@ -544,8 +544,10 @@ function renderIntakeResult(intakeData){{
   const readinessLabel = p.readiness;
 
   const roles = (dp.detected_roles||[]).map(r=>`<span class="role-chip">${{esc(r)}}</span>`).join('');
-  const warnings = (p.diagnostics||[]).filter(d=>d.severity==='warning').slice(0,3)
-    .map(d=>`<div class="warn-item">${{esc(d.message)}}</div>`).join('');
+  const rawWarnings = (p.diagnostics||[]).filter(d=>d.severity==='warning');
+  const seen = new Set();
+  const warnings = rawWarnings.filter(d=>{{ if(seen.has(d.message)) return false; seen.add(d.message); return true; }})
+    .slice(0,3).map(d=>`<div class="warn-item">${{esc(d.message)}}</div>`).join('');
 
   // Per-file classification table
   const fileRows = (p.files||[]).map(f=>{{

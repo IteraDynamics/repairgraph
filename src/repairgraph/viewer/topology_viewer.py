@@ -43,7 +43,6 @@ def _svg_vehicle(regions_json_var: str = "REGIONS") -> str:
     labels = []
     for reg in VEHICLE_REGIONS:
         label = html.escape(reg["label"])
-        # Only show labels for large enough regions
         w = reg["width"]
         if w >= 60:
             labels.append(
@@ -54,35 +53,59 @@ def _svg_vehicle(regions_json_var: str = "REGIONS") -> str:
                 f'{label}</text>'
             )
 
-    # Wheel circles
-    wheels = [
-        f'  <ellipse cx="132" cy="282" rx="38" ry="22" fill="#1a1d27" stroke="#3d4155" stroke-width="1.5"/>',
-        f'  <ellipse cx="132" cy="282" rx="22" ry="13" fill="#111318" stroke="#3d4155" stroke-width="1"/>',
-        f'  <ellipse cx="708" cy="282" rx="38" ry="22" fill="#1a1d27" stroke="#3d4155" stroke-width="1.5"/>',
-        f'  <ellipse cx="708" cy="282" rx="22" ry="13" fill="#111318" stroke="#3d4155" stroke-width="1"/>',
-    ]
-    # Windshield / glass
-    glass = [
-        f'  <polygon points="170,38 202,38 202,208 170,208" fill="#111827" stroke="#2d3748" stroke-width="1" opacity="0.6" pointer-events="none"/>',
-        f'  <polygon points="354,38 368,38 368,208 354,208" fill="#111827" stroke="#2d3748" stroke-width="1" opacity="0.6" pointer-events="none"/>',
-        f'  <polygon points="490,38 504,38 504,208 490,208" fill="#111827" stroke="#2d3748" stroke-width="1" opacity="0.6" pointer-events="none"/>',
-    ]
-
     all_rects = "\n".join(rects)
     all_labels = "\n".join(labels)
-    all_wheels = "\n".join(wheels)
-    all_glass = "\n".join(glass)
 
     return f"""<svg id="vehicle-svg" viewBox="0 0 790 310" xmlns="http://www.w3.org/2000/svg"
      style="width:100%;max-width:860px;display:block;margin:0 auto;">
-  <!-- Vehicle body outline -->
-  <rect x="10" y="38" width="770" height="238" rx="18" fill="#1a1d27" stroke="#2d3748" stroke-width="1.5" opacity="0.4"/>
-  <!-- Repair regions -->
+  <!-- Ground shadow -->
+  <ellipse cx="420" cy="300" rx="368" ry="9" fill="#000" opacity="0.22" pointer-events="none"/>
+  <!-- Car body silhouette (sedan profile) -->
+  <path d="M 26,254
+    C 12,252 8,238 8,218
+    L 8,166
+    C 8,154 14,144 28,136
+    L 48,114
+    L 94,86
+    L 174,78
+    L 200,38
+    L 642,38
+    C 660,38 672,46 678,58
+    L 700,78
+    L 754,78
+    C 774,78 782,90 782,108
+    L 782,178
+    C 782,198 774,216 760,228
+    L 748,254
+    Z"
+    fill="#141824" stroke="#2d3a4e" stroke-width="1.5"/>
+  <!-- Body character line -->
+  <line x1="30" y1="138" x2="752" y2="138"
+    stroke="#1e2a3a" stroke-width="1" opacity="0.7" pointer-events="none"/>
+  <!-- Windshield glass (angled) -->
+  <polygon points="176,78 202,78 202,40 196,40"
+    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
+  <!-- Front door glass -->
+  <rect x="204" y="40" width="148" height="36" rx="3"
+    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
+  <!-- Rear door glass -->
+  <rect x="370" y="40" width="118" height="36" rx="3"
+    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
+  <!-- Quarter glass -->
+  <rect x="506" y="40" width="134" height="36" rx="3"
+    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
+  <!-- Rear glass (angled) -->
+  <polygon points="642,38 648,38 672,60 700,78 692,78 670,62 648,40"
+    fill="#0c1624" stroke="#182840" stroke-width="1" opacity="0.92" pointer-events="none"/>
+  <!-- Repair regions (interactive) -->
 {all_rects}
-  <!-- Pillars / glass overlays -->
-{all_glass}
   <!-- Wheels -->
-{all_wheels}
+  <ellipse cx="132" cy="282" rx="40" ry="24" fill="#0e1118" stroke="#374151" stroke-width="1.5"/>
+  <ellipse cx="132" cy="282" rx="28" ry="17" fill="#0a0d12" stroke="#4b5563" stroke-width="1"/>
+  <ellipse cx="132" cy="282" rx="12" ry="7" fill="#141824" stroke="#6b7280" stroke-width="1"/>
+  <ellipse cx="708" cy="282" rx="40" ry="24" fill="#0e1118" stroke="#374151" stroke-width="1.5"/>
+  <ellipse cx="708" cy="282" rx="28" ry="17" fill="#0a0d12" stroke="#4b5563" stroke-width="1"/>
+  <ellipse cx="708" cy="282" rx="12" ry="7" fill="#141824" stroke="#6b7280" stroke-width="1"/>
   <!-- Region labels -->
 {all_labels}
 </svg>"""
