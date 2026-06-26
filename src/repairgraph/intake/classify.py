@@ -607,7 +607,8 @@ def _read_file_text(path: Path) -> tuple[str, list[str], list[str]]:
             import subprocess  # noqa: PLC0415
             proc = subprocess.run(
                 ["pdftotext", str(path), "-"],
-                capture_output=True, text=True, timeout=30, check=False,
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=30, check=False,
             )
             if proc.returncode == 0 and len(proc.stdout.strip()) >= 40:
                 warnings.append(
