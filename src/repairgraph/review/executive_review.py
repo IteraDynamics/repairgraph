@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from repairgraph.core.operational_model import OperationalModel
+from repairgraph.review.root_cause import RootCauseAnalysis, build_root_cause_analysis
 
 # ---------------------------------------------------------------------------
 # Decision constants
@@ -146,6 +147,7 @@ class ExecutiveReview:
     confidence: ConfidenceExplanation
     decision_rationale: list[dict[str, Any]]
     decision_rationale_extra: list[dict[str, Any]]
+    root_cause_analysis: dict[str, Any] = None  # type: ignore[assignment]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -161,6 +163,7 @@ class ExecutiveReview:
             "confidence": self.confidence.to_dict(),
             "decision_rationale": self.decision_rationale,
             "decision_rationale_extra": self.decision_rationale_extra,
+            "root_cause_analysis": self.root_cause_analysis or {},
         }
 
 
@@ -804,6 +807,7 @@ def build_executive_review(model: OperationalModel) -> ExecutiveReview:
     executive_summary = _generate_executive_summary(
         model, decision, primary_problem, immediate_actions
     )
+    rca = build_root_cause_analysis(model)
 
     return ExecutiveReview(
         overall_decision=decision,
@@ -818,4 +822,5 @@ def build_executive_review(model: OperationalModel) -> ExecutiveReview:
         confidence=confidence,
         decision_rationale=rationale,
         decision_rationale_extra=rationale_extra,
+        root_cause_analysis=rca.to_dict(),
     )

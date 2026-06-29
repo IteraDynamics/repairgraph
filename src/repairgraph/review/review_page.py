@@ -321,6 +321,112 @@ def _render_confidence(er: dict[str, Any]) -> str:
 </section>"""
 
 
+def _render_root_causes(er: dict[str, Any]) -> str:
+    """Root Cause Analysis — replaces raw findings list as primary rationale."""
+    rca = er.get("root_cause_analysis", {})
+    root_causes = rca.get("root_causes", [])
+    if not root_causes:
+        return ""
+
+    summary = _esc(rca.get("summary", ""))
+    detail = _esc(rca.get("summary_detail", ""))
+    open_qa = rca.get("open_qa_count", 0)
+    open_bl = rca.get("open_blocker_count", 0)
+    collapsed = rca.get("collapsed_finding_count", 0)
+
+    _sev_colors = {
+        "critical": {"bg": "#fef2f2", "border": "#ef4444", "badge": "#ef4444"},
+        "high": {"bg": "#fff7ed", "border": "#f97316", "badge": "#f97316"},
+        "medium": {"bg": "#fffbeb", "border": "#f59e0b", "badge": "#f59e0b"},
+        "low": {"bg": "#f0fdf4", "border": "#22c55e", "badge": "#22c55e"},
+    }
+
+    def _rc_card(rc: dict[str, Any]) -> str:
+        priority = rc.get("priority", "medium")
+        sc = _sev_colors.get(priority, _sev_colors["medium"])
+        impact = rc.get("impact", {})
+        blocked_phases = impact.get("blocked_phases", [])
+        blocked_qa = impact.get("blocked_qa", [])
+        blocked_actions = impact.get("blocked_actions", [])
+        affected_findings = impact.get("affected_findings", [])
+        score = rc.get("impact_score", 0)
+
+        phase_items = "".join(
+            f'<span class="rr-rc-phase-chip">{_esc(p)}</span>' for p in blocked_phases
+        )
+        phase_html = f'<div class="rr-rc-impact-row"><strong>Blocks:</strong> {phase_items}</div>' if blocked_phases else ""
+
+        qa_count = len(blocked_qa)
+        qa_html = ""
+        if blocked_qa:
+            qa_items_html = "".join(f"<li>{_esc(q)}</li>" for q in blocked_qa[:4])
+            more = f"<li>+ {qa_count - 4} more</li>" if qa_count > 4 else ""
+            qa_html = f'<div class="rr-rc-qa"><strong>{qa_count} open QA gate{"s" if qa_count != 1 else ""}:</strong><ul>{qa_items_html}{more}</ul></div>'
+
+        action_count = len(blocked_actions)
+        action_html = ""
+        if action_count:
+            action_html = f'<div class="rr-rc-actions"><strong>{action_count} blocked action{"s" if action_count != 1 else ""}</strong></div>'
+
+        finding_html = ""
+        if affected_findings:
+            f_items = "".join(f"<li>{_esc(f)}</li>" for f in affected_findings[:3])
+            more = f"<li>+ {len(affected_findings) - 3} more</li>" if len(affected_findings) > 3 else ""
+            finding_html = f'<div class="rr-rc-findings"><strong>Related findings:</strong><ul>{f_items}{more}</ul></div>'
+
+        resolution = _esc(rc.get("recommended_resolution", ""))
+        resolution_html = f'<div class="rr-rc-resolution"><strong>Recommended Resolution:</strong><p>{resolution}</p></div>' if resolution else ""
+
+        unblocked = impact.get("unblocked_phases", [])
+        unblock_html = ""
+        if unblocked:
+            names = ", ".join(unblocked[:3])
+            unblock_html = f'<div class="rr-rc-unblock">Resolving this unblocks: <strong>{_esc(names)}</strong></div>'
+
+        return f"""
+<div class="rr-rc-card" style="background:{sc['bg']};border-left:5px solid {sc['border']};">
+  <div class="rr-rc-header">
+    <span class="rr-rc-badge" style="background:{sc['badge']};color:#fff;">{_esc(priority.upper())}</span>
+    <span class="rr-rc-concern">{_esc(rc.get("concern_display",""))}</span>
+    <span class="rr-rc-score">Impact score: {score}</span>
+  </div>
+  <h4 class="rr-rc-title">{_esc(rc.get("title",""))}</h4>
+  <p class="rr-rc-desc">{_esc(rc.get("description",""))}</p>
+  {phase_html}
+  {qa_html}
+  {action_html}
+  {finding_html}
+  {resolution_html}
+  {unblock_html}
+</div>"""
+
+    cards = "".join(_rc_card(rc) for rc in root_causes)
+
+    stats_html = ""
+    if open_qa or open_bl or collapsed:
+        parts = []
+        if collapsed:
+            parts.append(f"{collapsed} findings collapsed into {len(root_causes)} root causes")
+        if open_qa:
+            parts.append(f"{open_qa} open QA gates")
+        if open_bl:
+            parts.append(f"{open_bl} open blockers")
+        stats_html = f'<p class="rr-rc-stats">{_esc(" · ".join(parts))}</p>'
+
+    detail_html = f'<p class="rr-rc-detail">{detail}</p>' if detail else ""
+
+    return f"""
+<section class="rr-section" id="s-root-causes">
+  <h3 class="rr-section-title">Root Cause Analysis</h3>
+  <div class="rr-rc-summary">
+    <span class="rr-rc-summary-label">{summary}</span>
+    {detail_html}
+    {stats_html}
+  </div>
+  {cards}
+</section>"""
+
+
 def _render_decision_rationale(er: dict[str, Any]) -> str:
     """Why This Decision Was Made — max 5 findings, rest collapsed."""
     top = er.get("decision_rationale", [])
@@ -750,6 +856,30 @@ body {
 .rr-conf-pill { font-size: 13px; padding: 6px 14px; border-radius: 20px; margin-bottom: 8px; display: inline-block; }
 .rr-conf-reason { font-size: 13px; color: #475569; }
 
+/* Root Cause Analysis */
+.rr-rc-summary { background: #f1f5f9; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; }
+.rr-rc-summary-label { font-size: 16px; font-weight: 800; color: #1e293b; display: block; margin-bottom: 4px; }
+.rr-rc-detail { font-size: 14px; color: #374151; margin: 4px 0 0; }
+.rr-rc-stats { font-size: 12px; color: #64748b; margin: 6px 0 0; }
+.rr-rc-card { border-radius: 8px; padding: 18px 20px; margin-bottom: 16px; }
+.rr-rc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.rr-rc-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+.rr-rc-concern { font-size: 12px; color: #64748b; background: rgba(0,0,0,.06); padding: 2px 8px; border-radius: 4px; }
+.rr-rc-score { font-size: 11px; color: #94a3b8; margin-left: auto; }
+.rr-rc-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #1e293b; }
+.rr-rc-desc { font-size: 13px; color: #374151; margin-bottom: 12px; }
+.rr-rc-impact-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; font-size: 13px; }
+.rr-rc-phase-chip { background: #fff; border: 1px solid #e2e8f0; padding: 2px 10px; border-radius: 20px; font-size: 12px; color: #1e293b; }
+.rr-rc-qa { font-size: 13px; margin-bottom: 8px; }
+.rr-rc-qa ul { padding-left: 18px; margin-top: 4px; }
+.rr-rc-qa li { margin-bottom: 2px; color: #374151; }
+.rr-rc-actions { font-size: 13px; color: #64748b; margin-bottom: 8px; }
+.rr-rc-findings { font-size: 12px; color: #64748b; margin-bottom: 8px; }
+.rr-rc-findings ul { padding-left: 18px; margin-top: 2px; }
+.rr-rc-resolution { background: #eff6ff; border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; }
+.rr-rc-resolution p { margin-top: 4px; color: #1e40af; }
+.rr-rc-unblock { font-size: 13px; color: #166534; background: #f0fdf4; padding: 8px 12px; border-radius: 6px; }
+
 /* Finding cards */
 .rr-finding-card { border-radius: 8px; padding: 16px; margin-bottom: 12px; }
 .rr-finding-header { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
@@ -883,7 +1013,8 @@ def build_review_page_html(payload: ReviewPayload) -> str:
         ("#s-summary", "Summary"),
         ("#s-actions", "Actions"),
         ("#s-people", "For Your Team"),
-        ("#s-rationale", "Why This Decision"),
+        ("#s-root-causes", "Root Causes"),
+        ("#s-rationale", "Findings"),
         ("#s-structural", "Structural"),
         ("#s-documentation", "Documentation"),
         ("#s-evidence", "Evidence"),
@@ -915,6 +1046,7 @@ def build_review_page_html(payload: ReviewPayload) -> str:
   {_render_immediate_actions(er)}
   {_render_people_callouts(er)}
   {_render_confidence(er)}
+  {_render_root_causes(er)}
   {_render_decision_rationale(er)}
   {structural_html if structural_html.strip() else ""}
   {_render_workflow_secondary(wf)}

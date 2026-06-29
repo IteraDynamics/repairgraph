@@ -19,6 +19,7 @@ from repairgraph.adapters.collision import CollisionDomainAdapter
 from repairgraph.core.compiler import RepairGraphCompiler
 from repairgraph.review.review_page import build_review_page_html
 from repairgraph.review.review_payload import build_review_payload
+from repairgraph.review.root_cause import build_root_cause_analysis
 
 router = APIRouter(prefix="/internal", tags=["review"])
 
@@ -68,6 +69,25 @@ def get_review() -> HTMLResponse:
     payload = build_review_payload(model)
     html = build_review_page_html(payload)
     return HTMLResponse(content=html, status_code=200)
+
+
+@router.get(
+    "/review/root-causes",
+    summary="Root cause analysis as JSON",
+)
+def get_root_causes() -> dict[str, Any]:
+    """Return a deterministic root cause analysis for the current demo model.
+
+    Collapses many downstream symptoms into the minimum set of causal
+    explanations with impact scoring and recommended resolutions.
+    All outputs are advisory.
+    """
+    model = _build_model()
+    rca = build_root_cause_analysis(model)
+    return {
+        **rca.to_dict(),
+        "endpoint_advisory": _ADVISORY,
+    }
 
 
 @router.get(
