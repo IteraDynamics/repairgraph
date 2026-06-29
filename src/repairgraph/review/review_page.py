@@ -19,7 +19,38 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
+import re
+
 from repairgraph.review.review_payload import ReviewPayload
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+_LABEL_ACRONYMS: frozenset[str] = frozenset({"qa", "oem", "uhss", "hss", "mig", "mag", "vin"})
+
+
+def _format_display_label(s: str) -> str:
+    """Format internal snake_case identifiers for display, handling acronyms."""
+    parts = re.split(r"[_\-]", s)
+    out = []
+    for p in parts:
+        if not p:
+            continue
+        if p.lower() in _LABEL_ACRONYMS:
+            out.append(p.upper())
+        else:
+            out.append(p.title())
+    return " ".join(out)
+
+
+def _strip_ids(text: str) -> str:
+    """Remove internal gate/action IDs from user-facing text."""
+    text = re.sub(r"\bqa:[a-z_]+:[a-z]+:\d+\b\.?\s*", "", text)
+    text = re.sub(r"^QA gate remains open:\s*", "", text)
+    text = re.sub(r"^Resolve QA gate [^\s.]+\.\s*(?:Check:\s*)?", "", text)
+    return text.strip()
+
 
 # ---------------------------------------------------------------------------
 # Colour palette
@@ -57,6 +88,14 @@ _HERO_COLORS: dict[str, dict[str, str]] = {
         "hero_text": "#fff",
         "icon": "?",
         "print_color": "#7c3aed",
+    },
+    "NEEDS REVIEW": {
+        "bg": "#f0f9ff",
+        "border": "#3b82f6",
+        "hero_bg": "#3b82f6",
+        "hero_text": "#fff",
+        "icon": "🔍",
+        "print_color": "#2563eb",
     },
     # Legacy decision values (ReviewPayload.decision.decision) kept for nav/data
     "Blocked": {
@@ -296,17 +335,20 @@ def _render_decision_rationale(er: dict[str, Any]) -> str:
         ev = f.get("supporting_evidence", [])
         ev_html = ""
         if ev:
-            ev_items = "".join(f"<li>{_esc(e)}</li>" for e in ev)
-            ev_html = f"<div class='rr-finding-evidence'><ul>{ev_items}</ul></div>"
+            _id_pat = re.compile(r"qa:[a-z_]+:[a-z]+:\d+")
+            clean_ev = [e for e in ev if not _id_pat.search(str(e)) and not str(e).startswith("gate_id=") and not str(e).startswith("status=") and not str(e).startswith("category=")]
+            if clean_ev:
+                ev_items = "".join(f"<li>{_esc(e)}</li>" for e in clean_ev)
+                ev_html = f"<div class='rr-finding-evidence'><ul>{ev_items}</ul></div>"
         return f"""
 <div class="rr-finding-card" style="background:{sc['bg']};border-left:4px solid {sc['border']};">
   <div class="rr-finding-header">
     <span class="rr-sev-badge" style="background:{sc['badge']};color:#fff;">{_esc(sev.upper())}</span>
-    <span class="rr-cat-chip">{_esc(f.get("category","").replace("_"," ").title())}</span>
+    <span class="rr-cat-chip">{_esc(_format_display_label(f.get("category","")))}</span>
   </div>
   <h4 class="rr-finding-title">{_esc(f.get("title",""))}</h4>
-  <p class="rr-finding-explanation">{_esc(f.get("explanation",""))}</p>
-  <div class="rr-finding-action">{_esc(f.get("recommended_action",""))}</div>
+  <p class="rr-finding-explanation">{_esc(_strip_ids(f.get("explanation","")))}</p>
+  <div class="rr-finding-action">{_esc(_strip_ids(f.get("recommended_action","")))}</div>
   {ev_html}
 </div>"""
 
@@ -406,7 +448,7 @@ def _render_documentation(doc: dict[str, Any]) -> str:
     detected_html = ""
     if detected:
         items = "".join(
-            f'<span class="rr-role-chip rr-role-detected">{_esc(r.replace("_"," ").title())}</span>'
+            f'<span class="rr-role-chip rr-role-detected">{_esc(_format_display_label(r))}</span>'
             for r in detected
         )
         detected_html = f'<div class="rr-role-row"><strong>Supplied:</strong> {items}</div>'
@@ -414,7 +456,7 @@ def _render_documentation(doc: dict[str, Any]) -> str:
     missing_html = ""
     if missing:
         items = "".join(
-            f'<span class="rr-role-chip rr-role-missing">{_esc(r.replace("_"," ").title())}</span>'
+            f'<span class="rr-role-chip rr-role-missing">{_esc(_format_display_label(r))}</span>'
             for r in missing
         )
         missing_html = f'<div class="rr-role-row"><strong>Missing:</strong> {items}</div>'
@@ -431,7 +473,7 @@ def _render_documentation(doc: dict[str, Any]) -> str:
 
     return f"""
 <section class="rr-section" id="s-documentation">
-  <h3 class="rr-section-title">Required Documentation</h3>
+  <h3 class="rr-section-title">Repair Packet</h3>
   <div class="rr-doc-readiness">
     Packet status: <span style="font-weight:700;color:{r_color};">{_esc(readiness.title())}</span>
     &nbsp;·&nbsp; {doc.get("source_count",0)} document(s)
@@ -493,7 +535,7 @@ def _render_workflow_secondary(wf: dict[str, Any]) -> str:
         items = "".join(
             f'<div class="rr-blocker-item">'
             f'<span class="rr-sev-dot rr-sev-dot-{_esc(b.get("severity",""))}"></span>'
-            f'<span>{_esc(b.get("reason",""))}</span>'
+            f'<span>{_esc(_strip_ids(b.get("reason","")))}</span>'
             f'</div>'
             for b in open_blockers
         )
@@ -502,8 +544,8 @@ def _render_workflow_secondary(wf: dict[str, Any]) -> str:
     qa_html = ""
     if open_qa or passed_qa:
         open_items = "".join(
-            f'<div class="rr-qa-item rr-qa-open">⚠ {_esc(g.get("check",""))} '
-            f'<span class="rr-qa-cat">{_esc(g.get("category",""))}</span></div>'
+            f'<div class="rr-qa-item rr-qa-open">⚠ {_esc(_strip_ids(g.get("check","")))} '
+            f'<span class="rr-qa-cat">{_esc(_format_display_label(g.get("category","")))}</span></div>'
             for g in open_qa
         )
         passed_items = "".join(
