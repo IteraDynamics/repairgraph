@@ -242,3 +242,54 @@ Before adding new capabilities, ask:
 5. Does this avoid creating an OEM content repository?
 
 If the answer is no, the feature should wait.
+
+
+---
+
+## 11. Two-Layer Platform Architecture
+
+RepairGraph is structured as two distinct layers.
+
+### Layer 1: Procedural Intelligence Platform
+
+`src/repairgraph/core/`
+
+Responsible for compiling customer-supplied procedural information into a canonical `OperationalModel`. This layer is domain-agnostic. It has no knowledge of vehicles, OEMs, repair zones, calibration, or corrosion protection.
+
+Core types: `OperationalModel`, `RepairGraphCompiler`, `DomainAdapter`
+
+### Layer 2: Domain Products
+
+`src/repairgraph/adapters/`
+
+Domain adapters translate domain-specific concepts into the generic inputs the compiler expects. The first implementation is `CollisionDomainAdapter` (collision repair).
+
+Future adapters may cover aviation maintenance, industrial service, energy infrastructure, medical equipment, or other procedural domains. Adding a new domain requires only a new adapter — the platform layer is unchanged.
+
+### Design implication
+
+When adding new capabilities, ask which layer they belong to:
+
+- If the concept is generic to any procedural domain → platform layer
+- If the concept is specific to collision repair (vehicles, OEMs, zones) → domain adapter
+
+This boundary must be preserved as the platform evolves.
+
+The relationship between the layers:
+
+```
+                Domain Documents
+                        │
+                        ▼
+              Domain Adapter          ← Layer 2: collision, aviation, industrial...
+                        │
+                        ▼
+          RepairGraph Compiler        ← Layer 1: domain-agnostic platform
+                        │
+                        ▼
+             OperationalModel
+                        │
+        ┌───────────────┼───────────────┐
+        ▼               ▼               ▼
+     Insights        Replay         Reports
+```

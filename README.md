@@ -1,10 +1,45 @@
 # RepairGraph
 
-RepairGraph is a procedural intelligence engine for collision repair.
+RepairGraph is a procedural intelligence platform. Its first commercial product serves collision repair.
 
-It transforms customer-authorized OEM repair procedures, construction/material diagrams, weld specifications, and corrosion requirements into structured, machine-readable repair graphs — and then reasons over those graphs to produce actionable intelligence.
+It transforms customer-authorized OEM repair procedures into a canonical `OperationalModel` — and projects that model into insights, topology, workflow, replay, and reports.
 
-The goal is not to replace OEM procedures or redistribute OEM documentation. The goal is a structured intelligence layer that answers questions static documents cannot: what joining methods are required, which components are likely missing from an estimate, what material constraints govern a repair, and how procedures compare across vehicles.
+The goal is not to replace OEM procedures or redistribute OEM documentation. The goal is a structured intelligence layer that answers: what matters, what is missing, what is blocked, and what should happen next.
+
+## Platform Architecture
+
+RepairGraph is structured as two distinct layers.
+
+### Layer 1: Procedural Intelligence Platform
+
+Domain-agnostic. Responsible for compiling customer-supplied procedural information into a canonical `OperationalModel`.
+
+```
+                Domain Documents
+                        │
+                        ▼
+              Domain Adapter          ← collision, aviation, industrial...
+                        │
+                        ▼
+          RepairGraph Compiler        ← domain-agnostic orchestration
+                        │
+                        ▼
+             OperationalModel         ← canonical artifact
+                        │
+        ┌───────────────┼───────────────┐
+        ▼               ▼               ▼
+     Insights        Replay         Reports
+```
+
+Key packages:
+- `src/repairgraph/core/` — `OperationalModel`, `RepairGraphCompiler`, `DomainAdapter`
+- `src/repairgraph/adapters/` — `CollisionDomainAdapter` (and future domain adapters)
+
+### Layer 2: Domain Products
+
+Collision repair is the first product. Domain adapters translate domain-specific concepts (vehicles, OEMs, zones, calibration, corrosion) into generic compiler inputs.
+
+Future domains may include aviation maintenance, industrial service, energy infrastructure, medical equipment, and other procedural verticals. Adding a new domain requires only a new adapter — the platform layer is unchanged.
 
 ## Current focus
 
@@ -16,28 +51,13 @@ RepairGraph v0.1 covers a narrow seed domain:
 - Operation family: rear side outer panel / quarter panel replacement
 - Supporting context: weld symbol definitions, corrosion protection, roof and side panel construction/material diagrams
 
-## Architecture
-
-```
-OEM repair procedure
-    ↓
-Extraction + normalization (Layer 2)
-    ↓
-RepairGraph canonical JSON (Layer 3)
-    ↓
-Node/edge graph (Layer 4)
-    ↓
-Query + inference (Layer 5)
-    ↓
-Spatial topology + visualization (Layer 6)
-    ↓
-Actionable repair intelligence
-```
-
 ## Repository structure
 
 ```
 src/repairgraph/
+  core/              # OperationalModel, RepairGraphCompiler, DomainAdapter interface
+  adapters/          # CollisionDomainAdapter (and future domain adapters)
+  review/            # Review Repair — collision product front door (GET /internal/review)
   extract/           # Text extraction pipeline (draft JSON from OEM text)
   graph/             # Graph builders and exporters
   topology/          # Spatial repair topology and visualization exports
@@ -65,6 +85,23 @@ schemas/
 docs/
 tests/
 ```
+
+## Review Repair — collision product front door
+
+`GET /internal/review` returns a self-contained HTML page that answers
+in under 30 seconds:
+
+- Can this repair proceed?
+- What is blocking it?
+- What matters most?
+- What is missing?
+- What should happen next?
+- What evidence supports those conclusions?
+
+It consumes the `OperationalModel` via the `RepairGraphCompiler`. No CDN, no frameworks, no external JS.
+See [docs/REVIEW_REPAIR.md](docs/REVIEW_REPAIR.md) for architecture details.
+
+RepairGraph works with repair information supplied by the shop. It does not replace OEM procedures or distribute licensed repair data. All outputs are advisory and require qualified technician review against OEM procedures.
 
 ## Milestones
 
