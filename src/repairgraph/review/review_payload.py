@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from repairgraph.core.operational_model import OperationalModel
+from repairgraph.review.executive_review import ExecutiveReview, build_executive_review
 
 # ---------------------------------------------------------------------------
 # Decision derivation
@@ -389,6 +390,7 @@ class ReviewPayload:
     advisory_notice: str = ""
     generated_at: str = ""
     model_id: str = ""
+    executive_review: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -403,11 +405,13 @@ class ReviewPayload:
             "advisory_notice": self.advisory_notice,
             "generated_at": self.generated_at,
             "model_id": self.model_id,
+            "executive_review": self.executive_review,
         }
 
 
 def build_review_payload(model: OperationalModel) -> ReviewPayload:
     """Project an OperationalModel into a ReviewPayload for the Review Repair page."""
+    executive = build_executive_review(model)
     return ReviewPayload(
         header=_build_header(model),
         decision=_build_decision(model),
@@ -420,4 +424,5 @@ def build_review_payload(model: OperationalModel) -> ReviewPayload:
         advisory_notice=model.advisory.notice,
         generated_at=model.metadata.generated_at,
         model_id=model.metadata.model_id,
+        executive_review=executive.to_dict(),
     )
