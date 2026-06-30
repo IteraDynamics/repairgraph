@@ -87,3 +87,46 @@ python -m pytest tests/test_review_payload.py tests/test_review_api.py -v
 ```
 
 All existing tests continue to pass without modification.
+
+---
+
+## Operational Planner Integration
+
+The Review Repair page now consumes an `OperationalPlan` produced by the
+Operational Planner (`src/repairgraph/review/operational_planner.py`).
+
+The data flow is:
+
+```text
+OperationalModel
+      ↓
+RootCauseAnalysis
+      ↓
+OperationalPlanner
+      ↓
+ReviewPayload  +  OperationalPlan
+      ↓
+Review Repair UI
+```
+
+The `GET /internal/review` route builds the OperationalPlan alongside the
+ReviewPayload and passes it to `build_review_page_html()`. The page leads with
+a **Next Best Action** section that shows:
+
+- The single highest-leverage action
+- Why that action is recommended now
+- Expected unlocks (phases, QA gates, actions unblocked)
+- Critical path (ordered sequence of steps)
+- Action queue (Today / Next / Deferred)
+
+Root causes and other secondary content remain on the page but appear below
+the planner output.
+
+A separate JSON endpoint is available:
+
+```
+GET /internal/review/plan
+```
+
+This returns the full `OperationalPlan` as JSON for integration testing and
+downstream tooling.

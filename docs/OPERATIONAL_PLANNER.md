@@ -636,3 +636,79 @@ RepairGraph should not merely identify problems.
 RepairGraph should identify the next highest-leverage action.
 
 That is the difference between a checklist and an operational intelligence platform.
+
+---
+
+## Implementation Notes (v0)
+
+### Module
+
+`src/repairgraph/review/operational_planner.py`
+
+### Primary Objects
+
+- `OperationalPlan` — the top-level output
+- `NextBestAction` — the single highest-leverage action
+- `PlannerCandidate` — a normalised internal action candidate
+- `PlannerScore` — computed leverage score for a candidate
+- `PlannerUnlock` — something that becomes available when the next best action is completed
+
+### Entry Point
+
+```python
+from repairgraph.review.operational_planner import build_operational_plan
+
+plan = build_operational_plan(model, rca=rca)
+```
+
+### Scoring Weights (v0)
+
+Documented in `operational_planner.py` as module-level constants:
+
+| Signal | Weight |
+|--------|--------|
+| Critical QA gate cleared | +100 |
+| High-priority QA gate cleared | +60 |
+| Medium-priority QA gate cleared | +20 |
+| Blocked phase unblocked | +50 each |
+| Blocked action unblocked | +10 each |
+| Downstream QA gates enabled | +8 each |
+| Material / safety risk reduced | +40 |
+| Compliance risk reduced | +30 |
+| Evidence gap resolved | +20 |
+| Workflow moves to next phase | +25 |
+| Already completed / redundant action | -100 (returns immediately) |
+| Action still blocked | -80 |
+| Requires unavailable evidence | -50 |
+
+### Algorithm
+
+1. **Build candidates** from open QA gates, open blockers, blocked phases, workflow recommendations, evidence gaps, and root causes (if provided).
+2. **Score each candidate** using documented deterministic weights above.
+3. **Sort** by (leverage score ↓, severity, earliest phase, downstream unlock count, confidence).
+4. **Select** the top candidate as `next_best_action`.
+5. **Compute unlocks**, critical path, and action queue from the selection.
+6. **Fallback**: if no candidate scores positively, return "Review repair packet completeness before proceeding."
+
+### API Endpoint
+
+`GET /internal/review/plan` — returns `OperationalPlan` as JSON.
+
+### Review Page Integration
+
+`GET /internal/review` now passes the `OperationalPlan` to `build_review_page_html()`.
+The page displays a **Next Best Action** section (with expected unlocks, critical path, and action queue) immediately after the immediate actions section, before root causes and secondary content.
+
+### Tests
+
+`tests/test_operational_planner.py` — 76 tests covering:
+- OperationalPlan construction
+- Candidate generation
+- Leverage scoring (critical beats high, completed/blocked penalised)
+- Next best action selection and ordering
+- Expected unlock generation
+- Critical path generation
+- Action queue structure
+- `/internal/review/plan` endpoint
+- Review page planner integration
+- Regression: all existing endpoints unaffected

@@ -769,6 +769,74 @@ def _render_print_summary(
 </div>"""
 
 
+def _render_operational_plan(plan: dict[str, Any]) -> str:
+    """Render the Operational Plan section — leads with next best action."""
+    if not plan:
+        return ""
+
+    nba = plan.get("next_best_action") or {}
+    label = _esc(nba.get("display_label", ""))
+    why = _esc(nba.get("why_now", ""))
+    confidence = _esc(nba.get("confidence", ""))
+
+    if not label:
+        return ""
+
+    # Expected unlocks
+    unlocks = nba.get("expected_unlocks") or []
+    unlock_items = ""
+    for u in unlocks[:6]:
+        u_label = _esc(u.get("label", ""))
+        u_type = u.get("unlock_type", "")
+        icon = {"phase": "▶", "qa_gate": "✓", "action": "→", "risk": "⬇", "finding": "📄"}.get(u_type, "→")
+        unlock_items += f'<li class="rr-unlock-item"><span class="rr-unlock-icon">{icon}</span>{u_label}</li>'
+    unlocks_html = f'<ul class="rr-unlock-list">{unlock_items}</ul>' if unlock_items else ""
+
+    # Critical path
+    path = plan.get("critical_path") or []
+    path_html = ""
+    if path:
+        path_steps = ""
+        for i, step in enumerate(path[:6], 1):
+            active = ' rr-path-active' if i == 1 else ''
+            path_steps += f'<div class="rr-path-step{active}"><span class="rr-path-num">{i}</span><span class="rr-path-label">{_esc(step)}</span></div>'
+        path_html = f'<div class="rr-critical-path">{path_steps}</div>'
+
+    # Action queue
+    queue = plan.get("action_queue") or {}
+    today_items = queue.get("today", [])
+    next_items = queue.get("next", [])
+    queue_html = ""
+    if today_items or next_items:
+        today_html = ""
+        if today_items:
+            rows = "".join(f'<div class="rr-queue-item rr-queue-today"><span class="rr-queue-badge">Today</span>{_esc(a)}</div>' for a in today_items[:3])
+            today_html = rows
+        next_html = ""
+        if next_items:
+            rows = "".join(f'<div class="rr-queue-item rr-queue-next"><span class="rr-queue-badge rr-queue-badge-next">Next</span>{_esc(a)}</div>' for a in next_items[:3])
+            next_html = rows
+        queue_html = f'<div class="rr-action-queue">{today_html}{next_html}</div>'
+
+    conf_badge = f'<span class="rr-conf-badge rr-conf-{confidence.lower()}">{confidence.title()} Confidence</span>' if confidence else ""
+
+    risk = _esc(nba.get("risk_reduction", ""))
+    risk_html = f'<p class="rr-plan-risk"><strong>Risk reduction:</strong> {risk}</p>' if risk else ""
+
+    return f"""
+<section class="rr-section rr-plan-section" id="s-plan">
+  <h3 class="rr-section-title">Next Best Action {conf_badge}</h3>
+  <div class="rr-nba-card">
+    <div class="rr-nba-label">{label}</div>
+    {f'<p class="rr-nba-why">{why}</p>' if why else ""}
+    {risk_html}
+  </div>
+  {f'<h4 class="rr-subsection-title">Expected Unlocks</h4>{unlocks_html}' if unlocks_html else ""}
+  {f'<h4 class="rr-subsection-title">Critical Path</h4>{path_html}' if path_html else ""}
+  {f'<h4 class="rr-subsection-title">Action Queue</h4>{queue_html}' if queue_html else ""}
+</section>"""
+
+
 def _render_legal() -> str:
     return """
 <footer class="rr-footer">
@@ -995,8 +1063,15 @@ document.addEventListener('DOMContentLoaded', function() {
 # Main page builder
 # ---------------------------------------------------------------------------
 
-def build_review_page_html(payload: ReviewPayload) -> str:
-    """Return a self-contained HTML page for the Review Repair experience."""
+def build_review_page_html(
+    payload: ReviewPayload,
+    operational_plan: dict[str, Any] | None = None,
+) -> str:
+    """Return a self-contained HTML page for the Review Repair experience.
+
+    If operational_plan is provided, the page leads with the Next Best Action
+    section before root causes and other secondary content.
+    """
     p = payload.to_dict()
     h = p.get("header", {})
     er = p.get("executive_review", {})
@@ -1008,10 +1083,15 @@ def build_review_page_html(payload: ReviewPayload) -> str:
 
     decision = er.get("overall_decision", "INSUFFICIENT INFORMATION")
 
+    has_plan = bool(operational_plan and operational_plan.get("next_best_action", {}).get("display_label"))
     nav_links = [
         ("#s-status", "Status"),
         ("#s-summary", "Summary"),
         ("#s-actions", "Actions"),
+    ]
+    if has_plan:
+        nav_links.append(("#s-plan", "Next Action"))
+    nav_links += [
         ("#s-people", "For Your Team"),
         ("#s-root-causes", "Root Causes"),
         ("#s-rationale", "Findings"),
@@ -1025,6 +1105,7 @@ def build_review_page_html(payload: ReviewPayload) -> str:
     ) + "</nav>"
 
     structural_html = _render_structural_considerations(mr)
+    plan_html = _render_operational_plan(operational_plan or {})
 
     payload_json = json.dumps(p, ensure_ascii=False, indent=None)
     title = _esc(h.get("repair_label", "Repair Review"))
@@ -1035,7 +1116,29 @@ def build_review_page_html(payload: ReviewPayload) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Repair Review — {title}</title>
-<style>{_CSS}</style>
+<style>{_CSS}
+.rr-plan-section{{background:#f0f9ff;border-left:4px solid #3b82f6;padding:1.5rem 2rem;margin:1.5rem 0;border-radius:0 8px 8px 0}}
+.rr-nba-card{{background:#fff;border:1px solid #93c5fd;border-radius:8px;padding:1rem 1.25rem;margin:.75rem 0}}
+.rr-nba-label{{font-size:1.15rem;font-weight:700;color:#1e3a5f;margin-bottom:.4rem}}
+.rr-nba-why{{color:#374151;font-size:.95rem;margin:.25rem 0}}
+.rr-plan-risk{{color:#6b7280;font-size:.85rem;margin:.25rem 0}}
+.rr-unlock-list{{list-style:none;padding:0;margin:.5rem 0 1rem}}
+.rr-unlock-item{{padding:.3rem 0;color:#374151;font-size:.9rem}}
+.rr-unlock-icon{{margin-right:.5rem;color:#3b82f6}}
+.rr-critical-path{{display:flex;flex-direction:column;gap:.35rem;margin:.5rem 0 1rem}}
+.rr-path-step{{display:flex;align-items:flex-start;gap:.6rem;padding:.4rem .5rem;border-radius:6px;font-size:.9rem}}
+.rr-path-active{{background:#dbeafe;font-weight:600;color:#1e40af}}
+.rr-path-num{{min-width:1.5rem;font-variant-numeric:tabular-nums;color:#6b7280;font-size:.85rem}}
+.rr-action-queue{{display:flex;flex-direction:column;gap:.4rem;margin:.5rem 0}}
+.rr-queue-item{{padding:.4rem .75rem;border-radius:6px;font-size:.9rem;background:#f8fafc;border:1px solid #e2e8f0}}
+.rr-queue-badge{{display:inline-block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:#3b82f6;color:#fff;border-radius:4px;padding:.1rem .4rem;margin-right:.5rem}}
+.rr-queue-badge-next{{background:#64748b}}
+.rr-conf-badge{{font-size:.75rem;font-weight:600;padding:.15rem .5rem;border-radius:4px;margin-left:.5rem;vertical-align:middle}}
+.rr-conf-high{{background:#dcfce7;color:#166534}}
+.rr-conf-medium{{background:#fef3c7;color:#92400e}}
+.rr-conf-low{{background:#fee2e2;color:#991b1b}}
+.rr-subsection-title{{font-size:.9rem;font-weight:700;color:#374151;margin:1rem 0 .35rem;text-transform:uppercase;letter-spacing:.05em}}
+</style>
 </head>
 <body>
 <div class="rr-page">
@@ -1044,6 +1147,7 @@ def build_review_page_html(payload: ReviewPayload) -> str:
   {_render_hero(er)}
   {_render_executive_summary(er)}
   {_render_immediate_actions(er)}
+  {plan_html}
   {_render_people_callouts(er)}
   {_render_confidence(er)}
   {_render_root_causes(er)}

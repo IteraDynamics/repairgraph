@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse
 
 from repairgraph.adapters.collision import CollisionDomainAdapter
 from repairgraph.core.compiler import RepairGraphCompiler
+from repairgraph.review.operational_planner import build_operational_plan
 from repairgraph.review.review_page import build_review_page_html
 from repairgraph.review.review_payload import build_review_payload
 from repairgraph.review.root_cause import build_root_cause_analysis
@@ -66,8 +67,10 @@ def get_review() -> HTMLResponse:
     No CDN. No external JS. No frameworks.
     """
     model = _build_model()
+    rca = build_root_cause_analysis(model)
     payload = build_review_payload(model)
-    html = build_review_page_html(payload)
+    plan = build_operational_plan(model, rca=rca)
+    html = build_review_page_html(payload, operational_plan=plan.to_dict())
     return HTMLResponse(content=html, status_code=200)
 
 
@@ -86,6 +89,25 @@ def get_root_causes() -> dict[str, Any]:
     rca = build_root_cause_analysis(model)
     return {
         **rca.to_dict(),
+        "endpoint_advisory": _ADVISORY,
+    }
+
+
+@router.get(
+    "/review/plan",
+    summary="Operational Plan as JSON",
+)
+def get_operational_plan() -> dict[str, Any]:
+    """Return a deterministic OperationalPlan for the current demo model.
+
+    The plan answers: what is the highest-leverage action the shop should
+    take next, why that action, and what it unlocks. All outputs are advisory.
+    """
+    model = _build_model()
+    rca = build_root_cause_analysis(model)
+    plan = build_operational_plan(model, rca=rca)
+    return {
+        **plan.to_dict(),
         "endpoint_advisory": _ADVISORY,
     }
 
