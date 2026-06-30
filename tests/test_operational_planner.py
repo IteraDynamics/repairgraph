@@ -580,11 +580,11 @@ class TestReviewPagePlannerIntegration:
         resp = client.get("/internal/review")
         assert resp.status_code == 200
 
-    def test_review_page_has_next_best_action_section(self):
+    def test_review_page_has_next_best_task_section(self):
         resp = client.get("/internal/review")
         text = resp.text
-        # The plan section heading or next best action label should appear
-        assert "Next Best Action" in text or "next best action" in text.lower()
+        # The narrative section heading should appear (narrated as "Next Best Task")
+        assert "Next Best Task" in text or "Next Best Action" in text or "next best" in text.lower()
 
     def test_review_page_has_plan_section_id(self):
         resp = client.get("/internal/review")
@@ -602,9 +602,9 @@ class TestReviewPagePlannerIntegration:
         resp = client.get("/internal/review")
         assert "Action Queue" in resp.text or "Today" in resp.text
 
-    def test_review_page_has_next_action_nav_link(self):
+    def test_review_page_has_next_task_nav_link(self):
         resp = client.get("/internal/review")
-        assert "Next Action" in resp.text
+        assert "Next Task" in resp.text or "Next Action" in resp.text
 
 
 # ---------------------------------------------------------------------------

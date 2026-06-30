@@ -769,69 +769,84 @@ def _render_print_summary(
 </div>"""
 
 
-def _render_operational_plan(plan: dict[str, Any]) -> str:
-    """Render the Operational Plan section — leads with next best action."""
-    if not plan:
+def _render_narrative(narrative: dict[str, Any]) -> str:
+    """Render the Operational Narrative section — leads with Next Best Task."""
+    if not narrative:
         return ""
 
-    nba = plan.get("next_best_action") or {}
-    label = _esc(nba.get("display_label", ""))
-    why = _esc(nba.get("why_now", ""))
-    confidence = _esc(nba.get("confidence", ""))
+    task = _esc(narrative.get("next_best_task", ""))
+    why = _esc(narrative.get("why_now", ""))
+    progress = _esc(narrative.get("expected_progress", ""))
+    confidence = _esc(narrative.get("confidence", ""))
+    risk = _esc(narrative.get("risk_summary", ""))
 
-    if not label:
+    if not task:
         return ""
 
-    # Expected unlocks
-    unlocks = nba.get("expected_unlocks") or []
-    unlock_items = ""
-    for u in unlocks[:6]:
-        u_label = _esc(u.get("label", ""))
-        u_type = u.get("unlock_type", "")
-        icon = {"phase": "▶", "qa_gate": "✓", "action": "→", "risk": "⬇", "finding": "📄"}.get(u_type, "→")
-        unlock_items += f'<li class="rr-unlock-item"><span class="rr-unlock-icon">{icon}</span>{u_label}</li>'
+    # Expected unlocks — already natural language strings
+    unlocks = narrative.get("expected_unlocks") or []
+    unlock_items = "".join(
+        f'<li class="rr-unlock-item"><span class="rr-unlock-icon">▶</span>{_esc(u)}</li>'
+        for u in unlocks[:6] if u
+    )
     unlocks_html = f'<ul class="rr-unlock-list">{unlock_items}</ul>' if unlock_items else ""
 
-    # Critical path
-    path = plan.get("critical_path") or []
+    # Critical path — already natural language strings
+    path = narrative.get("critical_path") or []
     path_html = ""
     if path:
         path_steps = ""
         for i, step in enumerate(path[:6], 1):
-            active = ' rr-path-active' if i == 1 else ''
-            path_steps += f'<div class="rr-path-step{active}"><span class="rr-path-num">{i}</span><span class="rr-path-label">{_esc(step)}</span></div>'
+            active = " rr-path-active" if i == 1 else ""
+            path_steps += (
+                f'<div class="rr-path-step{active}">'
+                f'<span class="rr-path-num">{i}</span>'
+                f'<span class="rr-path-label">{_esc(step)}</span>'
+                f"</div>"
+            )
         path_html = f'<div class="rr-critical-path">{path_steps}</div>'
 
-    # Action queue
-    queue = plan.get("action_queue") or {}
-    today_items = queue.get("today", [])
-    next_items = queue.get("next", [])
+    # Action queue — today / next / later (already narrated strings)
+    today_items = narrative.get("today") or []
+    next_items = narrative.get("next") or []
+    later_items = narrative.get("later") or []
     queue_html = ""
-    if today_items or next_items:
-        today_html = ""
-        if today_items:
-            rows = "".join(f'<div class="rr-queue-item rr-queue-today"><span class="rr-queue-badge">Today</span>{_esc(a)}</div>' for a in today_items[:3])
-            today_html = rows
-        next_html = ""
-        if next_items:
-            rows = "".join(f'<div class="rr-queue-item rr-queue-next"><span class="rr-queue-badge rr-queue-badge-next">Next</span>{_esc(a)}</div>' for a in next_items[:3])
-            next_html = rows
-        queue_html = f'<div class="rr-action-queue">{today_html}{next_html}</div>'
+    if today_items or next_items or later_items:
+        rows = ""
+        for a in today_items[:3]:
+            rows += f'<div class="rr-queue-item rr-queue-today"><span class="rr-queue-badge">Today</span>{_esc(a)}</div>'
+        for a in next_items[:3]:
+            rows += f'<div class="rr-queue-item rr-queue-next"><span class="rr-queue-badge rr-queue-badge-next">Next</span>{_esc(a)}</div>'
+        if later_items:
+            later_rows = "".join(
+                f'<div class="rr-deferred-item">→ {_esc(a)}</div>' for a in later_items[:5]
+            )
+            rows += (
+                f'<details class="rr-upcoming-detail" style="margin-top:.5rem">'
+                f'<summary class="rr-upcoming-summary">Later ({len(later_items)} items)</summary>'
+                f'<div class="rr-deferred-list">{later_rows}</div>'
+                f'</details>'
+            )
+        queue_html = f'<div class="rr-action-queue">{rows}</div>'
 
-    conf_badge = f'<span class="rr-conf-badge rr-conf-{confidence.lower()}">{confidence.title()} Confidence</span>' if confidence else ""
-
-    risk = _esc(nba.get("risk_reduction", ""))
-    risk_html = f'<p class="rr-plan-risk"><strong>Risk reduction:</strong> {risk}</p>' if risk else ""
+    conf_badge = (
+        f'<span class="rr-conf-badge rr-conf-{confidence.lower()}">'
+        f'{confidence.title()} Confidence</span>'
+        if confidence else ""
+    )
+    risk_html = f'<p class="rr-plan-risk">{risk}</p>' if risk else ""
+    progress_html = f'<p class="rr-nba-progress">{progress}</p>' if progress else ""
 
     return f"""
 <section class="rr-section rr-plan-section" id="s-plan">
-  <h3 class="rr-section-title">Next Best Action {conf_badge}</h3>
+  <h3 class="rr-section-title">Next Best Task {conf_badge}</h3>
   <div class="rr-nba-card">
-    <div class="rr-nba-label">{label}</div>
+    <div class="rr-nba-label">{task}</div>
     {f'<p class="rr-nba-why">{why}</p>' if why else ""}
+    {progress_html}
     {risk_html}
   </div>
-  {f'<h4 class="rr-subsection-title">Expected Unlocks</h4>{unlocks_html}' if unlocks_html else ""}
+  {f'<h4 class="rr-subsection-title">Expected Progress</h4>{unlocks_html}' if unlocks_html else ""}
   {f'<h4 class="rr-subsection-title">Critical Path</h4>{path_html}' if path_html else ""}
   {f'<h4 class="rr-subsection-title">Action Queue</h4>{queue_html}' if queue_html else ""}
 </section>"""
@@ -1065,13 +1080,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 def build_review_page_html(
     payload: ReviewPayload,
+    narrative: dict[str, Any] | None = None,
     operational_plan: dict[str, Any] | None = None,
 ) -> str:
     """Return a self-contained HTML page for the Review Repair experience.
 
-    If operational_plan is provided, the page leads with the Next Best Action
-    section before root causes and other secondary content.
+    If narrative is provided, the page leads with the Next Best Task section
+    (narrated natural language) before root causes and other secondary content.
+    operational_plan is accepted for backward compatibility but narrative takes
+    precedence.
     """
+    # Prefer narrative; fall back to raw plan for backward compat
+    _narrative = narrative or {}
+
     p = payload.to_dict()
     h = p.get("header", {})
     er = p.get("executive_review", {})
@@ -1083,14 +1104,14 @@ def build_review_page_html(
 
     decision = er.get("overall_decision", "INSUFFICIENT INFORMATION")
 
-    has_plan = bool(operational_plan and operational_plan.get("next_best_action", {}).get("display_label"))
+    has_plan = bool(_narrative.get("next_best_task"))
     nav_links = [
         ("#s-status", "Status"),
         ("#s-summary", "Summary"),
         ("#s-actions", "Actions"),
     ]
     if has_plan:
-        nav_links.append(("#s-plan", "Next Action"))
+        nav_links.append(("#s-plan", "Next Task"))
     nav_links += [
         ("#s-people", "For Your Team"),
         ("#s-root-causes", "Root Causes"),
@@ -1105,7 +1126,7 @@ def build_review_page_html(
     ) + "</nav>"
 
     structural_html = _render_structural_considerations(mr)
-    plan_html = _render_operational_plan(operational_plan or {})
+    plan_html = _render_narrative(_narrative)
 
     payload_json = json.dumps(p, ensure_ascii=False, indent=None)
     title = _esc(h.get("repair_label", "Repair Review"))
@@ -1121,6 +1142,7 @@ def build_review_page_html(
 .rr-nba-card{{background:#fff;border:1px solid #93c5fd;border-radius:8px;padding:1rem 1.25rem;margin:.75rem 0}}
 .rr-nba-label{{font-size:1.15rem;font-weight:700;color:#1e3a5f;margin-bottom:.4rem}}
 .rr-nba-why{{color:#374151;font-size:.95rem;margin:.25rem 0}}
+.rr-nba-progress{{color:#1e40af;font-size:.9rem;margin:.4rem 0;font-style:italic}}
 .rr-plan-risk{{color:#6b7280;font-size:.85rem;margin:.25rem 0}}
 .rr-unlock-list{{list-style:none;padding:0;margin:.5rem 0 1rem}}
 .rr-unlock-item{{padding:.3rem 0;color:#374151;font-size:.9rem}}

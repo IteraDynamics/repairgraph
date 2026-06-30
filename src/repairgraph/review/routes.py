@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse
 
 from repairgraph.adapters.collision import CollisionDomainAdapter
 from repairgraph.core.compiler import RepairGraphCompiler
+from repairgraph.review.narrator import build_narrative
 from repairgraph.review.operational_planner import build_operational_plan
 from repairgraph.review.review_page import build_review_page_html
 from repairgraph.review.review_payload import build_review_payload
@@ -70,7 +71,8 @@ def get_review() -> HTMLResponse:
     rca = build_root_cause_analysis(model)
     payload = build_review_payload(model)
     plan = build_operational_plan(model, rca=rca)
-    html = build_review_page_html(payload, operational_plan=plan.to_dict())
+    narrative = build_narrative(plan)
+    html = build_review_page_html(payload, narrative=narrative.to_dict())
     return HTMLResponse(content=html, status_code=200)
 
 
@@ -108,6 +110,27 @@ def get_operational_plan() -> dict[str, Any]:
     plan = build_operational_plan(model, rca=rca)
     return {
         **plan.to_dict(),
+        "endpoint_advisory": _ADVISORY,
+    }
+
+
+@router.get(
+    "/review/narrative",
+    summary="Operational Narrative as JSON",
+)
+def get_narrative() -> dict[str, Any]:
+    """Return the narrated OperationalPlan for the current demo model.
+
+    The narrative translates deterministic planner output into natural
+    operational language suitable for technicians, managers, and executives.
+    All outputs are advisory.
+    """
+    model = _build_model()
+    rca = build_root_cause_analysis(model)
+    plan = build_operational_plan(model, rca=rca)
+    narrative = build_narrative(plan)
+    return {
+        **narrative.to_dict(),
         "endpoint_advisory": _ADVISORY,
     }
 
