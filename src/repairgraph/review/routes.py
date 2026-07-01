@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse
 
 from repairgraph.adapters.collision import CollisionDomainAdapter
 from repairgraph.core.compiler import RepairGraphCompiler
+from repairgraph.core.execution_package import build_execution_package, project_collision_work_package
 from repairgraph.review.narrator import build_narrative
 from repairgraph.review.operational_planner import build_operational_plan
 from repairgraph.review.review_page import build_review_page_html
@@ -72,7 +73,13 @@ def get_review() -> HTMLResponse:
     payload = build_review_payload(model)
     plan = build_operational_plan(model, rca=rca)
     narrative = build_narrative(plan)
-    html = build_review_page_html(payload, narrative=narrative.to_dict())
+    pkg = build_execution_package(plan, narrative, model)
+    work_pkg = project_collision_work_package(pkg, narrative)
+    html = build_review_page_html(
+        payload,
+        narrative=narrative.to_dict(),
+        work_package=work_pkg.to_dict(),
+    )
     return HTMLResponse(content=html, status_code=200)
 
 
@@ -110,6 +117,31 @@ def get_operational_plan() -> dict[str, Any]:
     plan = build_operational_plan(model, rca=rca)
     return {
         **plan.to_dict(),
+        "endpoint_advisory": _ADVISORY,
+    }
+
+
+@router.get(
+    "/review/package",
+    summary="Collision Work Package as JSON",
+)
+def get_work_package() -> dict[str, Any]:
+    """Return the current Collision Work Package for the demo model.
+
+    The work package converts the next highest-leverage task into a
+    structured, executable unit of work with prerequisites, required
+    verifications, execution steps, and completion criteria.
+    All outputs are advisory.
+    """
+    model = _build_model()
+    rca = build_root_cause_analysis(model)
+    plan = build_operational_plan(model, rca=rca)
+    narrative = build_narrative(plan)
+    pkg = build_execution_package(plan, narrative, model)
+    work_pkg = project_collision_work_package(pkg, narrative)
+    return {
+        **work_pkg.to_dict(),
+        "execution_package": pkg.to_dict(),
         "endpoint_advisory": _ADVISORY,
     }
 

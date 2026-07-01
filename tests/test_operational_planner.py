@@ -583,8 +583,14 @@ class TestReviewPagePlannerIntegration:
     def test_review_page_has_next_best_task_section(self):
         resp = client.get("/internal/review")
         text = resp.text
-        # The narrative section heading should appear (narrated as "Next Best Task")
-        assert "Next Best Task" in text or "Next Best Action" in text or "next best" in text.lower()
+        # Sprint 3: work package supersedes narrative section — look for work package content
+        assert (
+            "Next Best Task" in text
+            or "Next Best Action" in text
+            or "next best" in text.lower()
+            or "Work Package" in text
+            or "Work to Perform" in text
+        )
 
     def test_review_page_has_plan_section_id(self):
         resp = client.get("/internal/review")
@@ -592,19 +598,22 @@ class TestReviewPagePlannerIntegration:
 
     def test_review_page_has_critical_path(self):
         resp = client.get("/internal/review")
-        assert "Critical Path" in resp.text
+        # Sprint 3: work package replaces narrative view; critical path exposed via work package
+        assert "Critical Path" in resp.text or "What This Unlocks" in resp.text
 
     def test_review_page_has_expected_unlocks(self):
         resp = client.get("/internal/review")
-        assert "Expected Unlocks" in resp.text or "unlock" in resp.text.lower()
+        assert "Expected Unlocks" in resp.text or "unlock" in resp.text.lower() or "What This Unlocks" in resp.text
 
     def test_review_page_has_action_queue(self):
         resp = client.get("/internal/review")
-        assert "Action Queue" in resp.text or "Today" in resp.text
+        # Sprint 3: action queue replaced by work package steps
+        assert "Action Queue" in resp.text or "Today" in resp.text or "Work to Perform" in resp.text
 
     def test_review_page_has_next_task_nav_link(self):
         resp = client.get("/internal/review")
-        assert "Next Task" in resp.text or "Next Action" in resp.text
+        # Sprint 3: nav link renamed to "Work Package"
+        assert "Next Task" in resp.text or "Next Action" in resp.text or "Work Package" in resp.text
 
 
 # ---------------------------------------------------------------------------

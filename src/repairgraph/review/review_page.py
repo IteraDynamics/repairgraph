@@ -852,6 +852,101 @@ def _render_narrative(narrative: dict[str, Any]) -> str:
 </section>"""
 
 
+def _render_work_package(wp: dict[str, Any]) -> str:
+    """Render the Current Work Package section from a CollisionWorkPackage dict."""
+    if not wp:
+        return ""
+
+    title = _esc(wp.get("work_package_title", ""))
+    purpose = _esc(wp.get("purpose", ""))
+    status = _esc(wp.get("repair_status", ""))
+    urgency = _esc(wp.get("urgency", ""))
+    confidence = wp.get("confidence", "")
+    risk_note = _esc(wp.get("risk_note", ""))
+    tech_brief = _esc(wp.get("technician_brief", ""))
+    mgr_brief = _esc(wp.get("manager_brief", ""))
+
+    if not title:
+        return ""
+
+    def _list_section(heading: str, items: list[str], icon: str = "•") -> str:
+        if not items:
+            return ""
+        rows = "".join(
+            f'<li class="rr-wp-item"><span class="rr-wp-icon">{icon}</span>{_esc(i)}</li>'
+            for i in items if i
+        )
+        return (
+            f'<h4 class="rr-subsection-title">{heading}</h4>'
+            f'<ul class="rr-wp-list">{rows}</ul>'
+        )
+
+    conf_badge = (
+        f'<span class="rr-conf-badge rr-conf-{confidence.lower()}">'
+        f'{confidence.title()} Confidence</span>'
+        if confidence else ""
+    )
+    status_badge = f'<span class="rr-wp-status-badge">{status}</span>' if status else ""
+    urgency_html = f'<span class="rr-wp-urgency">{urgency}</span>' if urgency else ""
+
+    prereqs_html   = _list_section("Before You Start", wp.get("before_you_start", []), "✓")
+    verif_html     = _list_section("Verifications Required", wp.get("verifications_required", []), "?")
+    work_html      = _list_section("Work to Perform", wp.get("work_to_perform", []), "→")
+    done_html      = _list_section("Done When", wp.get("done_when", []), "✓")
+    unlocks_html   = _list_section("What This Unlocks", wp.get("what_this_unlocks", []), "▶")
+
+    blocked_items = wp.get("currently_blocked_by", [])
+    blocked_html = ""
+    if blocked_items:
+        rows = "".join(
+            f'<li class="rr-wp-item rr-wp-blocked"><span class="rr-wp-icon">⛔</span>{_esc(b)}</li>'
+            for b in blocked_items[:4] if b
+        )
+        blocked_html = (
+            f'<h4 class="rr-subsection-title">Currently Blocked By</h4>'
+            f'<ul class="rr-wp-list">{rows}</ul>'
+        )
+
+    risk_html = f'<p class="rr-plan-risk">{risk_note}</p>' if risk_note else ""
+
+    team_html = ""
+    if tech_brief or mgr_brief:
+        tech_html_inner = (
+            f'<div class="rr-callout rr-callout-tech" style="margin:.5rem 0">'
+            f'<div class="rr-callout-label">Technician</div>'
+            f'<p class="rr-callout-msg">{tech_brief}</p>'
+            f'</div>'
+        ) if tech_brief else ""
+        mgr_html_inner = (
+            f'<div class="rr-callout rr-callout-mgr" style="margin:.5rem 0">'
+            f'<div class="rr-callout-label">Manager</div>'
+            f'<p class="rr-callout-msg">{mgr_brief}</p>'
+            f'</div>'
+        ) if mgr_brief else ""
+        team_html = (
+            f'<h4 class="rr-subsection-title">Team Briefs</h4>'
+            f'{tech_html_inner}{mgr_html_inner}'
+        )
+
+    return f"""
+<section class="rr-section rr-plan-section" id="s-plan">
+  <h3 class="rr-section-title">Current Work Package {conf_badge}</h3>
+  <div class="rr-nba-card">
+    <div class="rr-nba-label">{title}</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.4rem 0">{status_badge}{urgency_html}</div>
+    {f'<p class="rr-nba-why">{purpose}</p>' if purpose else ""}
+    {risk_html}
+  </div>
+  {prereqs_html}
+  {verif_html}
+  {work_html}
+  {done_html}
+  {unlocks_html}
+  {blocked_html}
+  {team_html}
+</section>"""
+
+
 def _render_legal() -> str:
     return """
 <footer class="rr-footer">
@@ -1082,16 +1177,17 @@ def build_review_page_html(
     payload: ReviewPayload,
     narrative: dict[str, Any] | None = None,
     operational_plan: dict[str, Any] | None = None,
+    work_package: dict[str, Any] | None = None,
 ) -> str:
     """Return a self-contained HTML page for the Review Repair experience.
 
-    If narrative is provided, the page leads with the Next Best Task section
-    (narrated natural language) before root causes and other secondary content.
-    operational_plan is accepted for backward compatibility but narrative takes
-    precedence.
+    Rendering priority for the s-plan section:
+      1. work_package (CollisionWorkPackage) — richest, preferred
+      2. narrative (OperationalNarrative) — used when no work_package
+      3. operational_plan (raw plan dict) — backward compat only
     """
-    # Prefer narrative; fall back to raw plan for backward compat
     _narrative = narrative or {}
+    _wp = work_package or {}
 
     p = payload.to_dict()
     h = p.get("header", {})
@@ -1104,14 +1200,14 @@ def build_review_page_html(
 
     decision = er.get("overall_decision", "INSUFFICIENT INFORMATION")
 
-    has_plan = bool(_narrative.get("next_best_task"))
+    has_plan = bool(_wp.get("work_package_title") or _narrative.get("next_best_task"))
     nav_links = [
         ("#s-status", "Status"),
         ("#s-summary", "Summary"),
         ("#s-actions", "Actions"),
     ]
     if has_plan:
-        nav_links.append(("#s-plan", "Next Task"))
+        nav_links.append(("#s-plan", "Work Package"))
     nav_links += [
         ("#s-people", "For Your Team"),
         ("#s-root-causes", "Root Causes"),
@@ -1126,7 +1222,11 @@ def build_review_page_html(
     ) + "</nav>"
 
     structural_html = _render_structural_considerations(mr)
-    plan_html = _render_narrative(_narrative)
+    # Work package takes precedence; fall back to narrative section
+    if _wp.get("work_package_title"):
+        plan_html = _render_work_package(_wp)
+    else:
+        plan_html = _render_narrative(_narrative)
 
     payload_json = json.dumps(p, ensure_ascii=False, indent=None)
     title = _esc(h.get("repair_label", "Repair Review"))
@@ -1160,6 +1260,13 @@ def build_review_page_html(
 .rr-conf-medium{{background:#fef3c7;color:#92400e}}
 .rr-conf-low{{background:#fee2e2;color:#991b1b}}
 .rr-subsection-title{{font-size:.9rem;font-weight:700;color:#374151;margin:1rem 0 .35rem;text-transform:uppercase;letter-spacing:.05em}}
+.rr-wp-list{{list-style:none;padding:0;margin:.5rem 0 1rem}}
+.rr-wp-item{{display:flex;align-items:flex-start;gap:.5rem;padding:.3rem 0;color:#374151;font-size:.9rem;line-height:1.5}}
+.rr-wp-blocked{{color:#991b1b}}
+.rr-wp-icon{{min-width:1.2rem;color:#3b82f6;font-size:.85rem}}
+.rr-wp-blocked .rr-wp-icon{{color:#ef4444}}
+.rr-wp-status-badge{{display:inline-block;font-size:.75rem;font-weight:600;padding:.2rem .6rem;border-radius:4px;background:#fee2e2;color:#991b1b}}
+.rr-wp-urgency{{display:inline-block;font-size:.75rem;font-weight:600;padding:.2rem .6rem;border-radius:4px;background:#fef3c7;color:#92400e;margin-left:.25rem}}
 </style>
 </head>
 <body>

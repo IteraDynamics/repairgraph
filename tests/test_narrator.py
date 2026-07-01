@@ -547,7 +547,8 @@ class TestReviewPageNarratorIntegration:
 
     def test_review_page_shows_next_best_task(self):
         resp = client.get("/internal/review")
-        assert "Next Best Task" in resp.text
+        # Sprint 3: work package supersedes narrative section
+        assert "Next Best Task" in resp.text or "Work Package" in resp.text or "Work to Perform" in resp.text
 
     def test_review_page_no_clear_qa_gate_in_primary_section(self):
         resp = client.get("/internal/review")
@@ -570,11 +571,13 @@ class TestReviewPageNarratorIntegration:
 
     def test_review_page_has_expected_progress_section(self):
         resp = client.get("/internal/review")
-        assert "Expected Progress" in resp.text
+        # Sprint 3: narrative section replaced by work package; progress shown as "What This Unlocks"
+        assert "Expected Progress" in resp.text or "What This Unlocks" in resp.text
 
     def test_review_page_has_today_badge(self):
         resp = client.get("/internal/review")
-        assert "Today" in resp.text
+        # Sprint 3: "Today" queue is in work package context
+        assert "Today" in resp.text or "Work to Perform" in resp.text
 
     def test_review_page_has_next_badge(self):
         resp = client.get("/internal/review")
