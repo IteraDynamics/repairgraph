@@ -1,0 +1,16 @@
+{
+  "oem": "Hyundai",
+  "year": 2023,
+  "model": "Elantra",
+  "domain": "body_panel_construction",
+  "materials": [],
+  "structure_nodes": [],
+  "notes": [
+    "No material specification documents detected during intake. Material classifications are unavailable."
+  ],
+  "source": {
+    "intake_id": "intake_b150258f",
+    "advisory": "This procedure file was derived from intake classification heuristics, not from direct OEM document parsing. Joining methods, corrosion requirements, and other fields reflect evidence detected during classification and may be incomplete. All outputs require verification by a qualified technician against the applicable OEM procedures before operational use.",
+    "normalized_at": "2026-07-02T13:04:01.593847+00:00"
+  }
+}

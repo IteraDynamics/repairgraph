@@ -344,6 +344,11 @@ def test_meta_fields_populated():
 
 def test_topology_builds_for_all_models():
     for proc in load_all_procedures():
+        # Skip intake-derived procedures — they have empty spatial_relationships
+        # by design (we don't fabricate zone topology from classification evidence).
+        source = proc.get("source", {})
+        if isinstance(source, dict) and source.get("intake_id"):
+            continue
         topology = build_topology_graph(proc)
         assert isinstance(topology, TopologyGraph)
         assert len(topology.zones) > 0

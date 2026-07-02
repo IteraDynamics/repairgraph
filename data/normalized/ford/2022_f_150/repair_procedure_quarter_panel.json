@@ -1,0 +1,31 @@
+{
+  "oem": "Ford",
+  "year": 2022,
+  "model": "F-150",
+  "operation": "bed_side_panel_replacement",
+  "operation_family": "quarter_panel",
+  "joining_methods": [
+    "spot_weld"
+  ],
+  "sectioning_locations": [],
+  "dependencies": [],
+  "corrosion_requirements": [],
+  "repair_notes": [],
+  "spatial_relationships": [],
+  "source": {
+    "intake_id": "intake_83322c03",
+    "detected_roles": [
+      "dimensions",
+      "materials",
+      "repair_procedure",
+      "welding"
+    ],
+    "files": [
+      "f150_materials.txt",
+      "f150_repair_procedure.txt"
+    ],
+    "readiness": "ready",
+    "advisory": "This procedure file was derived from intake classification heuristics, not from direct OEM document parsing. Joining methods, corrosion requirements, and other fields reflect evidence detected during classification and may be incomplete. All outputs require verification by a qualified technician against the applicable OEM procedures before operational use.",
+    "normalized_at": "2026-07-02T13:04:00.281504+00:00"
+  }
+}

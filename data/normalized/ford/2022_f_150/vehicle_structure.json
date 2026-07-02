@@ -1,0 +1,16 @@
+{
+  "oem": "Ford",
+  "year": 2022,
+  "model": "F-150",
+  "domain": "body_panel_construction",
+  "materials": [],
+  "structure_nodes": [],
+  "notes": [
+    "Material specification file detected during intake. Component-level material classifications require OEM document review and cannot be automatically derived from classification evidence."
+  ],
+  "source": {
+    "intake_id": "intake_83322c03",
+    "advisory": "This procedure file was derived from intake classification heuristics, not from direct OEM document parsing. Joining methods, corrosion requirements, and other fields reflect evidence detected during classification and may be incomplete. All outputs require verification by a qualified technician against the applicable OEM procedures before operational use.",
+    "normalized_at": "2026-07-02T13:04:00.281516+00:00"
+  }
+}

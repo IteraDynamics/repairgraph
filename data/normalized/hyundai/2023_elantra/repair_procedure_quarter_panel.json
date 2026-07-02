@@ -1,0 +1,34 @@
+{
+  "oem": "Hyundai",
+  "year": 2023,
+  "model": "Elantra",
+  "operation": "quarter_panel_replacement",
+  "operation_family": "quarter_panel",
+  "joining_methods": [
+    "spot_weld"
+  ],
+  "sectioning_locations": [],
+  "dependencies": [],
+  "corrosion_requirements": [
+    "corrosion_protection_required"
+  ],
+  "repair_notes": [],
+  "spatial_relationships": [],
+  "source": {
+    "intake_id": "intake_b150258f",
+    "detected_roles": [
+      "corrosion_protection",
+      "repair_procedure",
+      "welding"
+    ],
+    "files": [
+      "2023 Hyundai Elantra Quarter Panel Procedure with Welding and Corrosion.txt",
+      "2023 Hyundai Elantra Weld Points Breadcrumb.txt",
+      "sparse_document.txt",
+      "unknown_content_no_oem.txt"
+    ],
+    "readiness": "ready",
+    "advisory": "This procedure file was derived from intake classification heuristics, not from direct OEM document parsing. Joining methods, corrosion requirements, and other fields reflect evidence detected during classification and may be incomplete. All outputs require verification by a qualified technician against the applicable OEM procedures before operational use.",
+    "normalized_at": "2026-07-02T13:04:01.593837+00:00"
+  }
+}

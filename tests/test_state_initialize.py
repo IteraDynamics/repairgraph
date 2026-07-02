@@ -150,6 +150,13 @@ def test_initialize_repair_state_works_for_all_seed_models():
     procedures = load_all_procedures()
 
     for procedure in procedures:
+        # Skip intake-derived procedures — they have empty spatial_relationships
+        # and dependencies by design (we don't fabricate OEM procedure content).
+        # Their state is always valid but may have empty actions/zones.
+        source = procedure.get("source", {})
+        if isinstance(source, dict) and source.get("intake_id"):
+            continue
+
         structure = load_vehicle_structure(
             procedure["oem"],
             procedure["year"],

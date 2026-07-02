@@ -1,18 +1,34 @@
 """
 FastAPI router for the Review Repair product experience.
 
-GET /internal/review         — self-contained HTML page
-GET /internal/review/payload — ReviewPayload as JSON
+GET /internal/review              — self-contained HTML page
+GET /internal/review/payload      — ReviewPayload as JSON
+GET /internal/review/plan         — OperationalPlan as JSON
+GET /internal/review/narrative    — OperationalNarrative as JSON
+GET /internal/review/package      — CollisionWorkPackage as JSON
+GET /internal/review/root-causes  — RootCauseAnalysis as JSON
+GET /internal/review/vehicles     — available vehicles + active vehicle
 
-Both endpoints compile the OperationalModel from demo fixtures and
-project it through the ReviewPayload builder. No external dependencies.
+Vehicle selection (applies to all review endpoints except /vehicles):
+  All endpoints accept optional query parameters:
+    ?oem=Hyundai&year=2025&model=Elantra&operation=quarter_panel_replacement
+
+  Resolution order:
+    1. Explicit query params (oem + year + model must all be provided)
+    2. Active vehicle from data/active_vehicle.json (set by intake pipeline)
+    3. Honda 2025 Accord demo fixture (hardcoded fallback)
+
+  The active vehicle is set automatically when a packet is uploaded through
+  /internal/intake/classify or /internal/intake/report and the readiness is
+  'ready' or 'partial'. To reset to the demo, DELETE data/active_vehicle.json.
+
 All outputs are advisory.
 """
 from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import HTMLResponse
 
 from repairgraph.adapters.collision import CollisionDomainAdapter
@@ -33,8 +49,82 @@ _ADVISORY = (
 )
 
 
-def _build_model():
-    """Compile an OperationalModel from the Honda Accord demo fixtures."""
+# ---------------------------------------------------------------------------
+# Vehicle context resolution
+# ---------------------------------------------------------------------------
+
+def _resolve_vehicle(
+    oem: str | None,
+    year: int | None,
+    model: str | None,
+    operation: str | None,
+) -> tuple[str, int, str, str] | None:
+    """Return (oem, year, model, operation) from params or active vehicle, else None.
+
+    Returns None to signal: fall back to the Honda Accord demo fixture.
+    """
+    # 1. Explicit query params — all three identity fields required
+    if oem and year and model:
+        return (oem, year, model, operation or "quarter_panel_replacement")
+
+    # 2. Active vehicle from disk (set by intake pipeline)
+    try:
+        from repairgraph.core.vehicle_store import get_active_vehicle
+        ctx = get_active_vehicle()
+        if ctx:
+            return (ctx.oem, ctx.year, ctx.model, ctx.operation)
+    except Exception:
+        pass
+
+    return None
+
+
+def _build_model_for_vehicle(oem: str, year: int, model: str, operation: str):
+    """Compile an OperationalModel from a normalized vehicle in data/normalized/.
+
+    Uses initialize_repair_state (no demo events — real intake data represents
+    an unstarted repair). Returns None if the procedure is not found on disk.
+    """
+    from repairgraph.query.loader import load_procedure, load_vehicle_structure
+    from repairgraph.state.initialize import initialize_repair_state
+    from repairgraph.topology.builder import build_topology_graph
+
+    procedure = load_procedure(oem, year, model)
+    if procedure is None:
+        return None
+
+    structure = load_vehicle_structure(oem, year, model)
+    state = initialize_repair_state(procedure, structure)
+    topology = build_topology_graph(procedure, structure)
+    adapter = CollisionDomainAdapter.from_repair_state(state)
+
+    # Preserve explicitly provided operation label if it differs from what
+    # from_repair_state inferred (session.operation comes from the procedure).
+    if operation and operation != adapter.operation:
+        adapter = CollisionDomainAdapter(
+            oem=adapter.oem,
+            year=adapter.year,
+            model=adapter.model,
+            operation=operation,
+            repair_area=adapter.repair_area,
+            vehicle_systems=adapter.vehicle_systems,
+            structural_involvement=adapter.structural_involvement,
+            calibration_required=adapter.calibration_required,
+            corrosion_protection_required=adapter.corrosion_protection_required,
+            material_classifications=adapter.material_classifications,
+            active_zones=adapter.active_zones,
+        )
+
+    compiler = RepairGraphCompiler()
+    return compiler.compile_from_state(
+        state=state,
+        topology=topology,
+        adapter=adapter,
+    )
+
+
+def _build_demo_model():
+    """Compile the Honda 2025 Accord demo model (hardcoded fallback)."""
     adapter = CollisionDomainAdapter(
         oem="Honda",
         year=2025,
@@ -45,16 +135,42 @@ def _build_model():
         calibration_required=True,
         corrosion_protection_required=True,
     )
-    compiler = RepairGraphCompiler()
-    return compiler.compile_demo(adapter=adapter)
+    return RepairGraphCompiler().compile_demo(adapter=adapter)
 
+
+def _build_model(
+    oem: str | None = None,
+    year: int | None = None,
+    model: str | None = None,
+    operation: str | None = None,
+):
+    """Build an OperationalModel, resolving vehicle from params → active → demo."""
+    vehicle = _resolve_vehicle(oem, year, model, operation)
+    if vehicle is not None:
+        v_oem, v_year, v_model, v_op = vehicle
+        result = _build_model_for_vehicle(v_oem, v_year, v_model, v_op)
+        if result is not None:
+            return result
+        # Procedure not found on disk — fall through to demo
+
+    return _build_demo_model()
+
+
+# ---------------------------------------------------------------------------
+# Review page
+# ---------------------------------------------------------------------------
 
 @router.get(
     "/review",
     summary="Review Repair — collision product front door",
     response_class=HTMLResponse,
 )
-def get_review() -> HTMLResponse:
+def get_review(
+    oem: str | None = Query(None, description="OEM name (e.g. Honda, Hyundai)"),
+    year: int | None = Query(None, description="Model year (e.g. 2025)"),
+    model: str | None = Query(None, description="Vehicle model (e.g. Accord, Elantra)"),
+    operation: str | None = Query(None, description="Operation (e.g. quarter_panel_replacement)"),
+) -> HTMLResponse:
     """Return the Review Repair page as self-contained HTML.
 
     Answers immediately:
@@ -65,15 +181,16 @@ def get_review() -> HTMLResponse:
       - What should happen next?
       - What evidence supports those conclusions?
 
+    Vehicle is resolved from query params → active vehicle → Honda Accord demo.
     Consumes OperationalModel via RepairGraphCompiler. Vanilla HTML/CSS/JS only.
     No CDN. No external JS. No frameworks.
     """
-    model = _build_model()
-    rca = build_root_cause_analysis(model)
-    payload = build_review_payload(model)
-    plan = build_operational_plan(model, rca=rca)
+    operational_model = _build_model(oem=oem, year=year, model=model, operation=operation)
+    rca = build_root_cause_analysis(operational_model)
+    payload = build_review_payload(operational_model)
+    plan = build_operational_plan(operational_model, rca=rca)
     narrative = build_narrative(plan)
-    pkg = build_execution_package(plan, narrative, model)
+    pkg = build_execution_package(plan, narrative, operational_model)
     work_pkg = project_collision_work_package(pkg, narrative)
     html = build_review_page_html(
         payload,
@@ -83,19 +200,85 @@ def get_review() -> HTMLResponse:
     return HTMLResponse(content=html, status_code=200)
 
 
+# ---------------------------------------------------------------------------
+# Vehicle list
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/review/vehicles",
+    summary="Available vehicles and active vehicle context",
+)
+def get_vehicles() -> dict[str, Any]:
+    """Return available normalized vehicles and the current active vehicle.
+
+    'available_vehicles' lists all vehicles found in data/normalized/ —
+    both pre-authored fixtures (source: 'fixture') and intake-derived
+    vehicles (source: 'intake').
+
+    'active_vehicle' is the vehicle that will be used by /review and its
+    sub-endpoints when no explicit oem/year/model query params are given.
+    It is set automatically when a packet is processed through /intake/classify.
+
+    To reset to the demo, call DELETE /internal/review/vehicles/active or
+    delete data/active_vehicle.json directly.
+    """
+    from repairgraph.core.vehicle_store import get_active_vehicle, list_available_vehicles
+
+    active = get_active_vehicle()
+    available = list_available_vehicles()
+
+    return {
+        "active_vehicle": active.to_dict() if active else None,
+        "available_vehicles": available,
+        "demo_vehicle": {
+            "oem": "Honda",
+            "year": 2025,
+            "model": "Accord",
+            "operation": "quarter_panel_replacement",
+            "source": "fixture",
+        },
+        "resolution_order": [
+            "1. Explicit query params (?oem=&year=&model=)",
+            "2. Active vehicle (data/active_vehicle.json — set by /intake pipeline)",
+            "3. Honda 2025 Accord demo fixture (hardcoded fallback)",
+        ],
+        "endpoint_advisory": _ADVISORY,
+    }
+
+
+@router.delete(
+    "/review/vehicles/active",
+    summary="Clear the active vehicle context (revert to demo)",
+)
+def delete_active_vehicle() -> dict[str, Any]:
+    """Clear the active vehicle context, reverting all review endpoints to the
+    Honda Accord demo fixture until the next intake upload sets a new context.
+    """
+    from repairgraph.core.vehicle_store import clear_active_vehicle
+    clear_active_vehicle()
+    return {"cleared": True, "fallback": "Honda 2025 Accord demo fixture"}
+
+
+# ---------------------------------------------------------------------------
+# Sub-endpoints (all accept vehicle query params)
+# ---------------------------------------------------------------------------
+
 @router.get(
     "/review/root-causes",
     summary="Root cause analysis as JSON",
 )
-def get_root_causes() -> dict[str, Any]:
-    """Return a deterministic root cause analysis for the current demo model.
+def get_root_causes(
+    oem: str | None = Query(None),
+    year: int | None = Query(None),
+    model: str | None = Query(None),
+    operation: str | None = Query(None),
+) -> dict[str, Any]:
+    """Return a deterministic root cause analysis for the resolved vehicle model.
 
-    Collapses many downstream symptoms into the minimum set of causal
-    explanations with impact scoring and recommended resolutions.
     All outputs are advisory.
     """
-    model = _build_model()
-    rca = build_root_cause_analysis(model)
+    operational_model = _build_model(oem=oem, year=year, model=model, operation=operation)
+    rca = build_root_cause_analysis(operational_model)
     return {
         **rca.to_dict(),
         "endpoint_advisory": _ADVISORY,
@@ -106,15 +289,19 @@ def get_root_causes() -> dict[str, Any]:
     "/review/plan",
     summary="Operational Plan as JSON",
 )
-def get_operational_plan() -> dict[str, Any]:
-    """Return a deterministic OperationalPlan for the current demo model.
+def get_operational_plan(
+    oem: str | None = Query(None),
+    year: int | None = Query(None),
+    model: str | None = Query(None),
+    operation: str | None = Query(None),
+) -> dict[str, Any]:
+    """Return a deterministic OperationalPlan for the resolved vehicle model.
 
-    The plan answers: what is the highest-leverage action the shop should
-    take next, why that action, and what it unlocks. All outputs are advisory.
+    All outputs are advisory.
     """
-    model = _build_model()
-    rca = build_root_cause_analysis(model)
-    plan = build_operational_plan(model, rca=rca)
+    operational_model = _build_model(oem=oem, year=year, model=model, operation=operation)
+    rca = build_root_cause_analysis(operational_model)
+    plan = build_operational_plan(operational_model, rca=rca)
     return {
         **plan.to_dict(),
         "endpoint_advisory": _ADVISORY,
@@ -125,19 +312,21 @@ def get_operational_plan() -> dict[str, Any]:
     "/review/package",
     summary="Collision Work Package as JSON",
 )
-def get_work_package() -> dict[str, Any]:
-    """Return the current Collision Work Package for the demo model.
+def get_work_package(
+    oem: str | None = Query(None),
+    year: int | None = Query(None),
+    model: str | None = Query(None),
+    operation: str | None = Query(None),
+) -> dict[str, Any]:
+    """Return the Collision Work Package for the resolved vehicle model.
 
-    The work package converts the next highest-leverage task into a
-    structured, executable unit of work with prerequisites, required
-    verifications, execution steps, and completion criteria.
     All outputs are advisory.
     """
-    model = _build_model()
-    rca = build_root_cause_analysis(model)
-    plan = build_operational_plan(model, rca=rca)
+    operational_model = _build_model(oem=oem, year=year, model=model, operation=operation)
+    rca = build_root_cause_analysis(operational_model)
+    plan = build_operational_plan(operational_model, rca=rca)
     narrative = build_narrative(plan)
-    pkg = build_execution_package(plan, narrative, model)
+    pkg = build_execution_package(plan, narrative, operational_model)
     work_pkg = project_collision_work_package(pkg, narrative)
     return {
         **work_pkg.to_dict(),
@@ -150,16 +339,19 @@ def get_work_package() -> dict[str, Any]:
     "/review/narrative",
     summary="Operational Narrative as JSON",
 )
-def get_narrative() -> dict[str, Any]:
-    """Return the narrated OperationalPlan for the current demo model.
+def get_narrative(
+    oem: str | None = Query(None),
+    year: int | None = Query(None),
+    model: str | None = Query(None),
+    operation: str | None = Query(None),
+) -> dict[str, Any]:
+    """Return the narrated OperationalPlan for the resolved vehicle model.
 
-    The narrative translates deterministic planner output into natural
-    operational language suitable for technicians, managers, and executives.
     All outputs are advisory.
     """
-    model = _build_model()
-    rca = build_root_cause_analysis(model)
-    plan = build_operational_plan(model, rca=rca)
+    operational_model = _build_model(oem=oem, year=year, model=model, operation=operation)
+    rca = build_root_cause_analysis(operational_model)
+    plan = build_operational_plan(operational_model, rca=rca)
     narrative = build_narrative(plan)
     return {
         **narrative.to_dict(),
@@ -171,14 +363,19 @@ def get_narrative() -> dict[str, Any]:
     "/review/payload",
     summary="Review Repair payload as JSON",
 )
-def get_review_payload() -> dict[str, Any]:
-    """Return the ReviewPayload as JSON.
+def get_review_payload(
+    oem: str | None = Query(None),
+    year: int | None = Query(None),
+    model: str | None = Query(None),
+    operation: str | None = Query(None),
+) -> dict[str, Any]:
+    """Return the ReviewPayload as JSON for the resolved vehicle model.
 
     Exposes the same deterministic projection used by the HTML page.
     Useful for integration testing and downstream tooling.
     """
-    model = _build_model()
-    payload = build_review_payload(model)
+    operational_model = _build_model(oem=oem, year=year, model=model, operation=operation)
+    payload = build_review_payload(operational_model)
     return {
         **payload.to_dict(),
         "endpoint_advisory": _ADVISORY,

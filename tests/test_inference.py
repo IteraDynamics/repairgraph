@@ -198,7 +198,13 @@ def test_spot_weld_is_universal():
 
 
 def test_sealer_is_universal_corrosion():
-    result = find_corpus_motifs(load_all_procedures())
+    # Filter to fixture-only procedures (intake-derived procedures have sparse
+    # corrosion_requirements by design and must not be tested for universality).
+    fixture_procs = [
+        p for p in load_all_procedures()
+        if not (isinstance(p.get("source"), dict) and p["source"].get("intake_id"))
+    ]
+    result = find_corpus_motifs(fixture_procs)
     assert "sealer_application_required" in result["universal_corrosion_requirements"]
 
 

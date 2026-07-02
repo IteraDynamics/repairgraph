@@ -1,0 +1,10 @@
+{
+  "oem": "Toyota",
+  "year": 2023,
+  "model": "Camry",
+  "operation": "quarter_panel_replacement",
+  "normalized_at": "2026-07-02T13:04:02.902637+00:00",
+  "intake_id": "intake_17a4aa02",
+  "readiness": "ready",
+  "source": "intake"
+}

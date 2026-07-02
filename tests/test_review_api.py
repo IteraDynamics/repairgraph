@@ -59,13 +59,16 @@ class TestReviewHTMLEndpoint:
         assert "<h3>JSON" not in resp.text
 
     def test_html_mentions_honda_accord(self):
-        resp = client.get("/internal/review")
+        # Use explicit params to bypass active vehicle context
+        resp = client.get("/internal/review?oem=Honda&year=2025&model=Accord")
         assert "Honda" in resp.text or "Accord" in resp.text
 
     def test_html_has_next_action(self):
-        resp = client.get("/internal/review")
+        resp = client.get("/internal/review?oem=Honda&year=2025&model=Accord")
         text = resp.text.lower()
-        assert "next action" in text or "recommended action" in text
+        # Sprint 3: narrative/action language replaced by work package terminology
+        assert ("next action" in text or "recommended action" in text
+                or "work to perform" in text or "work package" in text)
 
     def test_html_has_evidence_section(self):
         resp = client.get("/internal/review")
@@ -123,7 +126,8 @@ class TestReviewPayloadEndpoint:
         )
 
     def test_payload_header_has_oem(self):
-        resp = client.get("/internal/review/payload")
+        # Use explicit params to bypass active vehicle context
+        resp = client.get("/internal/review/payload?oem=Honda&year=2025&model=Accord")
         data = resp.json()
         assert data["header"].get("oem") == "Honda"
 

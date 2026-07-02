@@ -1,0 +1,38 @@
+{
+  "oem": "Toyota",
+  "year": 2023,
+  "model": "Camry",
+  "operation": "quarter_panel_replacement",
+  "operation_family": "quarter_panel",
+  "joining_methods": [
+    "spot_weld",
+    "plug_weld",
+    "resistance_spot_weld"
+  ],
+  "sectioning_locations": [],
+  "dependencies": [],
+  "corrosion_requirements": [
+    "corrosion_protection_required",
+    "undercoating_application_required"
+  ],
+  "repair_notes": [],
+  "spatial_relationships": [],
+  "source": {
+    "intake_id": "intake_17a4aa02",
+    "detected_roles": [
+      "corrosion_protection",
+      "dimensions",
+      "materials",
+      "repair_procedure",
+      "welding"
+    ],
+    "files": [
+      "camry_corrosion_protection.txt",
+      "camry_repair_procedure.txt",
+      "camry_welding_specs.txt"
+    ],
+    "readiness": "ready",
+    "advisory": "This procedure file was derived from intake classification heuristics, not from direct OEM document parsing. Joining methods, corrosion requirements, and other fields reflect evidence detected during classification and may be incomplete. All outputs require verification by a qualified technician against the applicable OEM procedures before operational use.",
+    "normalized_at": "2026-07-02T13:04:02.902637+00:00"
+  }
+}

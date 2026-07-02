@@ -22,6 +22,7 @@ from fastapi.responses import HTMLResponse
 
 from repairgraph.intake.classify import classify_intake_packet, summarize_intake_manifest
 from repairgraph.intake.evidence import build_intake_evidence_payload
+from repairgraph.intake.normalizer import normalize_intake_manifest
 from repairgraph.intake.report import build_intake_html_report
 from repairgraph.intake.schema import IntakeManifest
 from repairgraph.intake.upload_page import build_intake_upload_page
@@ -94,7 +95,14 @@ def _serialize_manifest(manifest: IntakeManifest) -> dict[str, Any]:
 async def _process_uploads(files: list[UploadFile]) -> IntakeManifest:
     """Write uploaded files to a temp dir, classify the packet, return manifest.
 
+    After classification, if the readiness level is 'ready' or 'partial', the
+    manifest is also normalized and persisted to data/normalized/ so that the
+    review endpoints can compile the detected vehicle. The active vehicle context
+    is updated to point to the newly normalized vehicle.
+
     Temp directory and all files are deleted when this function returns.
+    All normalization is performed from the manifest (which carries the
+    extracted evidence), not from the original files.
     """
     if not files:
         raise HTTPException(status_code=422, detail="No files provided for intake.")
@@ -107,7 +115,40 @@ async def _process_uploads(files: list[UploadFile]) -> IntakeManifest:
             content = await upload.read()
             tmp_path.write_bytes(content)
             tmp_paths.append(tmp_path)
-        return classify_intake_packet(tmp_paths)
+        manifest = classify_intake_packet(tmp_paths)
+
+    # Normalize and persist outside the temp dir context (files no longer needed —
+    # all evidence was captured into the manifest during classification).
+    if manifest.readiness in ("ready", "partial"):
+        _try_normalize_and_persist(manifest)
+
+    return manifest
+
+
+def _try_normalize_and_persist(manifest: IntakeManifest) -> None:
+    """Normalize the manifest and update the active vehicle context.
+
+    Swallows all errors — normalization is best-effort and must never
+    cause the classify/report endpoints to fail.
+    """
+    try:
+        result = normalize_intake_manifest(manifest, write=True)
+        if result.written:
+            from repairgraph.core.vehicle_store import VehicleContext, set_active_vehicle
+            set_active_vehicle(
+                VehicleContext(
+                    oem=result.oem,
+                    year=result.year,
+                    model=result.model,
+                    operation=result.operation,
+                    normalized_at=result.procedure.get("source", {}).get("normalized_at", ""),
+                    intake_id=result.intake_id,
+                    readiness=result.readiness,
+                    source="intake",
+                )
+            )
+    except Exception:
+        pass  # normalization is advisory — never block the intake response
 
 
 @router.get(
