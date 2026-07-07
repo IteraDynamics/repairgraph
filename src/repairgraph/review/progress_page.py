@@ -88,15 +88,23 @@ def _esc(s: Any) -> str:
     return html.escape(str(s), quote=True)
 
 
+def _js_arg(s: str) -> str:
+    """Serialize a string as a JS literal safe inside a double-quoted HTML
+    attribute: JSON double quotes are entity-escaped so the attribute does
+    not terminate early."""
+    return html.escape(json.dumps(s), quote=True)
+
+
 def _gate_card(g: dict[str, Any]) -> str:
     gid = _esc(g["gate_id"])
+    gate_arg = _js_arg(g["gate_id"])
     controls = ""
     if g["status"] == "open":
         controls = (
             f'<div class="controls">'
-            f'<button class="primary" onclick="record(\'qa_gate_passed\',{json.dumps(g["gate_id"])})">Mark Passed</button>'
-            f'<button onclick="record(\'qa_gate_failed\',{json.dumps(g["gate_id"])})">Mark Failed</button>'
-            f'<button onclick="record(\'qa_gate_marked_not_applicable\',{json.dumps(g["gate_id"])})">N/A</button>'
+            f'<button class="primary" onclick="record(\'qa_gate_passed\',{gate_arg})">Mark Passed</button>'
+            f'<button onclick="record(\'qa_gate_failed\',{gate_arg})">Mark Failed</button>'
+            f'<button onclick="record(\'qa_gate_marked_not_applicable\',{gate_arg})">N/A</button>'
             f'</div>'
         )
     blocking = " · blocks completion" if g.get("blocks_completion") else ""
@@ -110,7 +118,7 @@ def _gate_card(g: dict[str, Any]) -> str:
 
 
 def _action_card(a: dict[str, Any]) -> str:
-    aid = json.dumps(a["action_id"])
+    aid = _js_arg(a["action_id"])
     controls = ""
     if a["status"] == "pending":
         controls = (

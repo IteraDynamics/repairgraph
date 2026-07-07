@@ -394,6 +394,16 @@ class TestProgressUI:
         assert "Reset Progress" in text
         assert "advisory" in text.lower()
 
+    def test_ui_onclick_attributes_are_well_formed(self):
+        """Regression: target IDs were serialized with raw double quotes inside
+        double-quoted onclick attributes, terminating the attribute early and
+        making every button a no-op."""
+        text = client.get(f"/internal/review/progress/ui{V}").text
+        # No onclick may contain an unescaped double quote from json.dumps
+        assert 'onclick="record(\'qa_gate_passed\',"' not in text
+        # The escaped form must be present for gate buttons
+        assert "onclick=\"record('qa_gate_passed',&quot;" in text
+
     def test_ui_reflects_recorded_progress(self):
         d = client.get(f"/internal/review/progress{V}").json()
         gate = next(g for g in d["qa_gates"] if g["status"] == "open")
