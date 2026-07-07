@@ -9,7 +9,17 @@ from repairgraph.query.query_procedures import (
 from repairgraph.taxonomy.aliases import resolve_alias
 
 
+def _is_intake_derived(procedure: dict) -> bool:
+    source = procedure.get("source")
+    return isinstance(source, dict) and bool(source.get("intake_id"))
+
+
 def find_corpus_motifs(procedures: list[dict]) -> dict:
+    # Corpus statistics are frequency-based; intake-derived procedures carry
+    # only classification evidence (no components, no dependencies) and would
+    # dilute every denominator without contributing signal. Exclude them.
+    procedures = [p for p in procedures if not _is_intake_derived(p)]
+
     n = len(procedures)
     if n == 0:
         return {"corpus_size": 0}

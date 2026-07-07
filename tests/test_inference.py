@@ -188,8 +188,14 @@ def test_by_category_covers_all_candidates():
 
 def test_motifs_corpus_size():
     procedures = load_all_procedures()
+    fixture_count = sum(
+        1 for p in procedures
+        if not (isinstance(p.get("source"), dict) and p["source"].get("intake_id"))
+    )
     result = find_corpus_motifs(procedures)
-    assert result["corpus_size"] == len(procedures)
+    # Intake-derived procedures are excluded from corpus statistics — they
+    # carry no component data and would dilute every frequency denominator.
+    assert result["corpus_size"] == fixture_count
 
 
 def test_spot_weld_is_universal():
