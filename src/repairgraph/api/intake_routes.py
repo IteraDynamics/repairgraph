@@ -133,7 +133,10 @@ def _try_normalize_and_persist(manifest: IntakeManifest) -> None:
     """
     try:
         result = normalize_intake_manifest(manifest, write=True)
-        if result.written:
+        # An authored fixture for this vehicle takes precedence over the
+        # sparse intake-derived procedure (it is never overwritten), but the
+        # vehicle still becomes active so the review serves what was uploaded.
+        if result.written or result.preserved_fixture:
             from repairgraph.core.vehicle_store import VehicleContext, set_active_vehicle
             set_active_vehicle(
                 VehicleContext(
@@ -144,7 +147,7 @@ def _try_normalize_and_persist(manifest: IntakeManifest) -> None:
                     normalized_at=result.procedure.get("source", {}).get("normalized_at", ""),
                     intake_id=result.intake_id,
                     readiness=result.readiness,
-                    source="intake",
+                    source="fixture" if result.preserved_fixture else "intake",
                 )
             )
     except Exception:

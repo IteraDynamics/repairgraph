@@ -103,7 +103,7 @@ class TestJournalStore:
 
     def test_session_dir_slugging(self):
         d = session_dir("Ford", 2022, "F-150")
-        assert str(d).endswith("ford/2022_f_150")
+        assert d.parts[-2:] == ("ford", "2022_f_150")
 
 
 # ---------------------------------------------------------------------------

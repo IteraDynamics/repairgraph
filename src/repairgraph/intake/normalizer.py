@@ -257,6 +257,7 @@ class NormalizationResult:
     procedure_path: Path | None = None
     structure_path: None | Path = None
     written: bool = False
+    preserved_fixture: bool = False
     warnings: list[str] = field(default_factory=list)
     advisory: str = _ADVISORY
 
@@ -336,10 +337,33 @@ def normalize_intake_manifest(
     if write and oem and model and year:
         base = output_dir or _NORMALIZED_DIR
         vehicle_dir = base / _oem_slug(oem) / f"{year}_{_model_slug(model)}"
-        vehicle_dir.mkdir(parents=True, exist_ok=True)
 
         proc_path = vehicle_dir / _PROCEDURE_FILENAME
         struct_path = vehicle_dir / _STRUCTURE_FILENAME
+
+        # Never overwrite an authored fixture. Fixture procedures are complete
+        # seed data with no source.intake_id; replacing them with a sparse
+        # classification-derived procedure would destroy content the intake
+        # pipeline cannot reconstruct. Intake-derived procedures may be
+        # re-normalized freely (a fresh upload supersedes the previous one).
+        if proc_path.exists():
+            try:
+                existing = json.loads(proc_path.read_text(encoding="utf-8"))
+                existing_src = existing.get("source")
+                is_intake_derived = isinstance(existing_src, dict) and existing_src.get("intake_id")
+            except (OSError, json.JSONDecodeError):
+                is_intake_derived = True  # unreadable file — safe to replace
+            if not is_intake_derived:
+                warnings.append(
+                    f"An authored fixture already exists for {oem} {year} {model}; "
+                    "intake normalization will not overwrite it. The existing "
+                    "fixture remains the procedure of record for this vehicle."
+                )
+                result.warnings = warnings
+                result.preserved_fixture = True
+                return result
+
+        vehicle_dir.mkdir(parents=True, exist_ok=True)
 
         proc_path.write_text(json.dumps(procedure, indent=2, ensure_ascii=False), encoding="utf-8")
         struct_path.write_text(json.dumps(structure, indent=2, ensure_ascii=False), encoding="utf-8")

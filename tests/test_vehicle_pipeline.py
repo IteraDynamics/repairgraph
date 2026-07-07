@@ -381,6 +381,41 @@ class TestNormalizationResult:
 # File write / roundtrip
 # ---------------------------------------------------------------------------
 
+class TestFixtureProtection:
+    """Intake normalization must never overwrite an authored fixture."""
+
+    def test_does_not_overwrite_authored_fixture(self):
+        manifest = _make_manifest(oem="Honda", model="Accord", year=2025)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Author a fixture (no source.intake_id) at the target path
+            vehicle_dir = Path(tmpdir) / "honda" / "2025_accord"
+            vehicle_dir.mkdir(parents=True)
+            proc_path = vehicle_dir / "repair_procedure_quarter_panel.json"
+            fixture = {"oem": "Honda", "year": 2025, "model": "Accord",
+                       "operation": "rear_side_outer_panel_replacement",
+                       "joining_methods": [{"method": "mig_brazing"}]}
+            proc_path.write_text(json.dumps(fixture), encoding="utf-8")
+
+            result = normalize_intake_manifest(manifest, output_dir=Path(tmpdir))
+
+            assert result.written is False
+            assert result.preserved_fixture is True
+            assert any("will not overwrite" in w for w in result.warnings)
+            # Fixture content untouched
+            on_disk = json.loads(proc_path.read_text(encoding="utf-8"))
+            assert on_disk == fixture
+
+    def test_reupload_overwrites_intake_derived_procedure(self):
+        manifest = _make_manifest()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            first = normalize_intake_manifest(manifest, output_dir=Path(tmpdir))
+            assert first.written is True
+
+            second = normalize_intake_manifest(manifest, output_dir=Path(tmpdir))
+            assert second.written is True
+            assert second.preserved_fixture is False
+
+
 class TestNormalizationWrite:
     def test_writes_procedure_file(self):
         manifest = _make_manifest()
