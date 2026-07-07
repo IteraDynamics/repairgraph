@@ -145,6 +145,9 @@ def _apply_action_event(state: RepairState, event: RepairEvent) -> None:
         if action.action_id in phase.pending_actions:
             phase.pending_actions.remove(action.action_id)
 
+        if status != "blocked" and action.action_id in phase.blocked_by:
+            phase.blocked_by.remove(action.action_id)
+
         if status == "complete" and action.action_id not in phase.completed_actions:
             phase.completed_actions.append(action.action_id)
 
@@ -207,13 +210,30 @@ def _has_open_blocker_for_phase(state: RepairState, phase: PhaseState) -> bool:
     )
 
 
+def _has_blocked_action_in_phase(state: RepairState, phase: PhaseState) -> bool:
+    return any(
+        action.status == "blocked"
+        for action in state.actions
+        if action.phase == phase.phase
+    )
+
+
+def _phase_status_from_action_progress(state: RepairState, phase: PhaseState) -> str:
+    phase_actions = [action for action in state.actions if action.phase == phase.phase]
+    if any(action.status in {"in_progress", "complete"} for action in phase_actions):
+        return "in_progress"
+    return "not_started"
+
+
 def _recompute_phase_completion(state: RepairState) -> None:
     for phase in state.phases:
-        if phase.status == "blocked":
-            continue
-        if _has_open_blocker_for_phase(state, phase):
+        if _has_open_blocker_for_phase(state, phase) or _has_blocked_action_in_phase(state, phase):
             phase.status = "blocked"
             continue
+        if phase.status == "blocked":
+            # Whatever blocked this phase has been resolved — recover the
+            # status from actual action progress instead of staying stuck.
+            phase.status = _phase_status_from_action_progress(state, phase)
         if _all_phase_actions_finished(state, phase):
             phase.status = "complete"
 
@@ -250,6 +270,13 @@ def _recompute_session_status(state: RepairState) -> None:
 
     if _all_phases_finished(state):
         state.session.status = "ready_for_review"
+        return
+
+    if state.session.status == "blocked" and not any(
+        phase.status == "blocked" for phase in state.phases
+    ):
+        # Everything that blocked the session has been resolved.
+        state.session.status = "in_progress"
 
 
 def _recompute_next_recommended_actions(state: RepairState) -> None:

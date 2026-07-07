@@ -15,3 +15,6 @@ data/raw/**/*.pdf
 data/raw/**/*.png
 data/raw/**/*.jpg
 data/raw/**/*.jpeg
+
+# Runtime session journals (progress events recorded via /internal/review/progress)
+data/sessions/

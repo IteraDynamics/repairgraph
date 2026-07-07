@@ -78,15 +78,21 @@ class RepairGraphCompiler:
         initial_state: RepairState | None = None,
         events: list[Any] | None = None,
         export_links: dict[str, str] | None = None,
+        manifest_overrides: dict[str, Any] | None = None,
     ) -> OperationalModel:
         """Build an OperationalModel from an already-compiled RepairState.
 
         This is the primary entry point for existing code that already builds
         RepairState through existing module pipelines.
+
+        manifest_overrides, when provided, supplies source-manifest fields
+        (readiness, filenames, source_count, ...) known to the caller — e.g.
+        the intake readiness recorded in a normalized procedure's source
+        metadata. They take precedence over adapter defaults.
         """
         metadata = ModelMetadata.create(compiler_version=self.COMPILER_VERSION)
 
-        source_manifest = self._build_source_manifest(source_paths, adapter)
+        source_manifest = self._build_source_manifest(source_paths, adapter, manifest_overrides)
         domain_context = adapter.build_domain_context() if adapter else _default_domain_context()
         evidence = self._build_evidence(state)
         workflow = self._build_workflow_summary(state)
@@ -158,10 +164,13 @@ class RepairGraphCompiler:
         self,
         source_paths: list[Path] | None,
         adapter: DomainAdapter | None,
+        manifest_overrides: dict[str, Any] | None = None,
     ) -> SourceManifest:
         overrides: dict[str, Any] = {}
         if adapter is not None:
             overrides = adapter.build_source_manifest_overrides()
+        if manifest_overrides:
+            overrides = {**overrides, **manifest_overrides}
 
         if source_paths:
             manifest = classify_intake_packet(source_paths)
