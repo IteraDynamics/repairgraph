@@ -1087,10 +1087,26 @@ def classify_intake_file(path: Path) -> IntakeFile:
         supporting_roles=role_result["supporting_roles"],
         role_scores=role_result["role_scores"],
         role_evidence=role_result["role_evidence"],
+        extracted_facts=_extract_facts_safe(text),
         confidence=round(confidence, 3),
         warnings=warnings,
         errors=errors,
     )
+
+
+def _extract_facts_safe(text: str) -> dict | None:
+    """Run deterministic content extraction over the file text.
+
+    Extraction is best-effort: a parser failure must never break
+    classification, so all errors collapse to None (no facts).
+    """
+    if not text or not text.strip():
+        return None
+    try:
+        from repairgraph.intake.content_extractor import extract_document_facts
+        return extract_document_facts(text)
+    except Exception:
+        return None
 
 
 def _weighted_consensus(values: list[Any], weights: list[float]) -> Any:

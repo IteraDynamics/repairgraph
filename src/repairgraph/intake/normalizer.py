@@ -14,19 +14,18 @@ Design principles
 - All output is marked intake-derived and advisory.
 - Writes are atomic per vehicle: procedure + structure both succeed or neither.
 
-What we CAN extract from role_evidence
+Extraction sources (in priority order)
 ---------------------------------------
-- joining_methods   → from welding-role file evidence phrases
-- corrosion_requirements → from corrosion_protection-role file evidence phrases
-- sectioning_locations   → presence of sectioning-role file signals partial data
-- operation, oem, model, year, operation_family → from IntakePacket detection
+1. extracted_facts — deterministic content extraction over the document text
+   (content_extractor.py). Provides dependencies, spatial relationships,
+   sectioning locations with dimensions, joining methods with counts,
+   corrosion requirements, materials, structure nodes, and repair notes.
+   Every fact carries the source snippet it was derived from.
+2. role_evidence phrases — classification evidence mapped to canonical IDs.
+   Used as a fallback/complement when content extraction found nothing.
 
-What we CANNOT extract (left empty)
--------------------------------------
-- spatial_relationships   (requires geometric/spatial parsing)
-- dependencies            (requires procedure logic parsing)
-- repair_notes            (requires full text extraction)
-- vehicle_structure.json materials (requires spec-sheet data)
+Fields still absent when the document text does not state them remain empty —
+nothing is inferred or fabricated.
 """
 from __future__ import annotations
 
@@ -170,6 +169,132 @@ def _derive_operation_family(operation: str | None) -> str:
     return _OPERATION_FAMILY_MAP.get(operation, "body_panel")
 
 
+# ---------------------------------------------------------------------------
+# Extracted-fact aggregation (content_extractor output, merged across files)
+# ---------------------------------------------------------------------------
+
+def _all_facts(manifest: IntakeManifest) -> list[dict[str, Any]]:
+    return [f.extracted_facts for f in manifest.files if f.extracted_facts]
+
+
+def _merge_fact_list(
+    manifest: IntakeManifest,
+    key: str,
+    identity,
+) -> list[dict[str, Any]]:
+    """Union a fact list across all files, deduped by an identity function."""
+    merged: list[dict[str, Any]] = []
+    seen: set = set()
+    for facts in _all_facts(manifest):
+        for item in facts.get(key, []):
+            marker = identity(item)
+            if marker in seen:
+                continue
+            seen.add(marker)
+            merged.append(item)
+    return merged
+
+
+def _facts_dependencies(manifest: IntakeManifest) -> list[dict[str, Any]]:
+    return _merge_fact_list(manifest, "dependencies", lambda d: (d["type"], d["target"]))
+
+
+def _facts_spatial_relationships(manifest: IntakeManifest) -> list[dict[str, Any]]:
+    return _merge_fact_list(
+        manifest, "spatial_relationships",
+        lambda r: (r["source"], r["relationship"], r["target"]),
+    )
+
+
+def _facts_sectioning_locations(manifest: IntakeManifest) -> list[dict[str, Any]]:
+    return _merge_fact_list(manifest, "sectioning_locations", lambda s: s["zone"])
+
+
+def _facts_joining_methods(manifest: IntakeManifest) -> list[dict[str, Any]]:
+    return _merge_fact_list(manifest, "joining_methods", lambda j: j["method"])
+
+
+def _facts_corrosion_requirements(manifest: IntakeManifest) -> list[str]:
+    return [r["requirement"] for r in _merge_fact_list(
+        manifest, "corrosion_requirements", lambda r: r["requirement"],
+    )]
+
+
+def _facts_materials(manifest: IntakeManifest) -> list[dict[str, Any]]:
+    return _merge_fact_list(manifest, "materials", lambda m: m["component"])
+
+
+def _facts_components(manifest: IntakeManifest) -> list[str]:
+    components: list[str] = []
+    for facts in _all_facts(manifest):
+        for c in facts.get("components", []):
+            if c not in components:
+                components.append(c)
+    return components
+
+
+def _vehicle_noise_tokens(manifest: IntakeManifest) -> set[str]:
+    """Tokens from the detected vehicle identity (oem/model) that indicate a
+    'component' is actually title noise (e.g. 'altima_quarter_panel' extracted
+    from the document heading)."""
+    pkt = manifest.detected_packet
+    tokens: set[str] = set()
+    for value in (pkt.detected_oem, pkt.detected_model):
+        if value:
+            tokens.update(_model_slug(value).split("_"))
+    return tokens
+
+
+def _is_vehicle_noise(component: str, noise_tokens: set[str]) -> bool:
+    return any(tok in noise_tokens for tok in component.split("_"))
+
+
+def _strip_vehicle_noise(manifest: IntakeManifest, procedure_facts: dict[str, Any]) -> None:
+    """Remove title-noise components (and facts referencing them) in place."""
+    noise = _vehicle_noise_tokens(manifest)
+    if not noise:
+        return
+
+    procedure_facts["components"] = [
+        c for c in procedure_facts["components"] if not _is_vehicle_noise(c, noise)
+    ]
+    procedure_facts["dependencies"] = [
+        d for d in procedure_facts["dependencies"] if not _is_vehicle_noise(d["target"], noise)
+    ]
+    procedure_facts["spatial_relationships"] = [
+        r for r in procedure_facts["spatial_relationships"]
+        if not (_is_vehicle_noise(r["source"], noise) or _is_vehicle_noise(r["target"], noise))
+    ]
+    procedure_facts["sectioning_locations"] = [
+        s for s in procedure_facts["sectioning_locations"] if not _is_vehicle_noise(s["zone"], noise)
+    ]
+    procedure_facts["materials"] = [
+        m for m in procedure_facts["materials"] if not _is_vehicle_noise(m["component"], noise)
+    ]
+
+
+def _facts_repair_notes(manifest: IntakeManifest) -> list[str]:
+    notes: list[str] = []
+    for facts in _all_facts(manifest):
+        for n in facts.get("repair_notes", []):
+            if n not in notes:
+                notes.append(n)
+    return notes
+
+
+def _gather_facts(manifest: IntakeManifest) -> dict[str, Any]:
+    """Merge extracted facts across files and strip vehicle-title noise."""
+    gathered = {
+        "components": _facts_components(manifest),
+        "dependencies": _facts_dependencies(manifest),
+        "spatial_relationships": _facts_spatial_relationships(manifest),
+        "sectioning_locations": _facts_sectioning_locations(manifest),
+        "materials": _facts_materials(manifest),
+    }
+    _strip_vehicle_noise(manifest, gathered)
+    return gathered
+
+
 def _build_procedure(manifest: IntakeManifest) -> dict[str, Any]:
     """Build a normalized procedure dict from intake manifest evidence."""
     pkt = manifest.detected_packet
@@ -178,18 +303,38 @@ def _build_procedure(manifest: IntakeManifest) -> dict[str, Any]:
     year = pkt.detected_year or 0
     operation = pkt.detected_operation or "quarter_panel_replacement"
 
+    # Content-extracted facts take priority; classification evidence phrases
+    # complement them (union) so neither source loses information.
+    gathered = _gather_facts(manifest)
+
+    joining_details = _facts_joining_methods(manifest)
+    joining_ids = [j["method"] for j in joining_details]
+    for method in _extract_joining_methods(manifest):
+        if method not in joining_ids:
+            joining_ids.append(method)
+
+    corrosion = _facts_corrosion_requirements(manifest)
+    for req in _extract_corrosion_requirements(manifest):
+        if req not in corrosion:
+            corrosion.append(req)
+
+    sectioning = gathered["sectioning_locations"]
+    if not sectioning:
+        sectioning = _extract_sectioning_locations(manifest)
+
     return {
         "oem": oem,
         "year": year,
         "model": model,
         "operation": operation,
         "operation_family": _derive_operation_family(operation),
-        "joining_methods": _extract_joining_methods(manifest),
-        "sectioning_locations": _extract_sectioning_locations(manifest),
-        "dependencies": [],
-        "corrosion_requirements": _extract_corrosion_requirements(manifest),
-        "repair_notes": [],
-        "spatial_relationships": [],
+        "joining_methods": joining_ids,
+        "joining_details": joining_details,
+        "sectioning_locations": sectioning,
+        "dependencies": gathered["dependencies"],
+        "corrosion_requirements": corrosion,
+        "repair_notes": _facts_repair_notes(manifest),
+        "spatial_relationships": gathered["spatial_relationships"],
         "source": {
             "intake_id": manifest.intake_id,
             "detected_roles": pkt.detected_roles,
@@ -210,27 +355,35 @@ def _build_structure(manifest: IntakeManifest) -> dict[str, Any]:
 
     has_materials_file = any(f.document_role == "materials" for f in manifest.files)
 
+    gathered = _gather_facts(manifest)
+    materials = gathered["materials"]
+    structure_nodes = gathered["components"]
+
+    if materials:
+        notes = [
+            "Material data extracted from uploaded document text. "
+            "Verify all classifications against the OEM specification sheet."
+        ]
+    elif has_materials_file:
+        notes = [
+            "Material specification file detected during intake, but no "
+            "component-level material data could be extracted from its text. "
+            "Verify against the OEM document."
+        ]
+    else:
+        notes = [
+            "No material specification documents detected during intake. "
+            "Material classifications are unavailable."
+        ]
+
     return {
         "oem": oem,
         "year": year,
         "model": model,
         "domain": "body_panel_construction",
-        # Material details require spec-sheet parsing; cannot be inferred from
-        # classification evidence alone.
-        "materials": [],
-        "structure_nodes": [],
-        "notes": (
-            [
-                "Material specification file detected during intake. "
-                "Component-level material classifications require OEM document "
-                "review and cannot be automatically derived from classification evidence."
-            ]
-            if has_materials_file
-            else [
-                "No material specification documents detected during intake. "
-                "Material classifications are unavailable."
-            ]
-        ),
+        "materials": materials,
+        "structure_nodes": structure_nodes,
+        "notes": notes,
         "source": {
             "intake_id": manifest.intake_id,
             "advisory": _ADVISORY,

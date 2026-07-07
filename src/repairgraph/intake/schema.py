@@ -60,6 +60,7 @@ class IntakeFile:
     supporting_roles: list[str] = field(default_factory=list)
     role_scores: dict[str, float] = field(default_factory=dict)
     role_evidence: list[str] = field(default_factory=list)
+    extracted_facts: dict[str, Any] | None = None
     confidence: float = 0.0
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
