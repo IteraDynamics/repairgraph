@@ -30,10 +30,12 @@ from repairgraph.state.schema import (
 def build_aviation_initial_state() -> RepairState:
     session = RepairSession(
         session_id="session_a320_n12345_tc_32_11_04",
-        # RepairSession has no aviation-native fields (aircraft_type,
-        # registration, task_card_id) — it only has oem/year/model/operation,
-        # which are collision vocabulary. Reused here as the closest-fit slots;
-        # flagged in docs/ARCHITECTURE_DERISK.md as a real coupling point.
+        # RepairSession's stored field names (oem/year/model/operation) are
+        # collision vocabulary, kept for backward compatibility. Consumers
+        # read them back out through the domain-neutral primary_context/
+        # secondary_context/context_label properties (see
+        # AviationDomainAdapter.from_repair_state and
+        # docs/ARCHITECTURE_DERISK.md finding #3).
         oem="Airbus",
         year=0,
         model="A320-200",

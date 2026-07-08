@@ -113,19 +113,19 @@ class AviationDomainAdapter:
         """Build an AviationDomainAdapter from an existing RepairState.
 
         Mirrors CollisionDomainAdapter.from_repair_state — proves the same
-        reconstruction pattern generalizes. Aviation RepairState sessions
-        store task_card_id/ata_chapter in session.model/session.operation
-        (the generic RepairSession has no aviation-specific fields, by
-        design — see docs/ARCHITECTURE_DERISK.md).
+        reconstruction pattern generalizes. Reads the session through its
+        domain-neutral primary_context/secondary_context/context_label
+        properties (state/schema.py) rather than the collision-named
+        oem/model/operation fields directly.
         """
         session = state.session
         inspector_required = any(
             g.category == "airworthiness" for g in state.qa_gates
         )
         return cls(
-            aircraft_type=getattr(session, "oem", "unknown"),
-            registration=getattr(session, "model", None),
-            task_card_id=getattr(session, "operation", "unknown"),
+            aircraft_type=session.primary_context or "unknown",
+            registration=session.secondary_context or None,
+            task_card_id=session.context_label or "unknown",
             inspector_sign_off_required=inspector_required,
             systems_affected=[z.zone_id for z in state.zones if z.status == "active"],
         )

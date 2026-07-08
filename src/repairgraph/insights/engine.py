@@ -12,17 +12,39 @@ from repairgraph.insights.rules import (
 from repairgraph.insights.schema import InsightFinding, InsightPayload, SEVERITY_ORDER
 from repairgraph.state.schema import RepairState
 
+# Rule modules below are grouped by whether their vocabulary is generic
+# (phases/actions/QA-gates/blockers — applies to any domain) or specific to
+# a particular domain's concerns (UHSS steel, ADAS calibration, corrosion
+# protection — collision-repair concerns with no meaning elsewhere).
+#
+# Domain-specific rule sets are opt-in per domain so a new domain adapter
+# does not inherit collision-repair findings by default. See
+# docs/ARCHITECTURE_DERISK.md for why this exists: an aviation task card
+# was previously getting a 'no ADAS calibration identified' finding, which
+# is meaningless outside collision repair.
+DOMAIN_RULE_MODULES: dict[str, tuple] = {
+    "collision_repair": (material_findings, compliance_findings),
+}
+
 
 def build_insight_payload(
     state: RepairState,
     manifest_dict: dict | None = None,
+    domain: str = "collision_repair",
 ) -> InsightPayload:
     """Produce a deterministic InsightPayload from repair state and intake manifest.
 
     Findings are sorted by severity (critical→informational), then category, then finding_id.
     No AI or inference — purely deterministic rules.
+
+    domain selects which domain-specific rule modules run (see
+    DOMAIN_RULE_MODULES). Generic rules (QA gates, workflow blockers,
+    milestones, intake readiness) always run regardless of domain. Defaults
+    to "collision_repair" so existing callers are unaffected; pass the
+    compiled model's domain_context.domain to gate correctly for other
+    domains.
     """
-    findings = _collect_findings(state, manifest_dict or {})
+    findings = _collect_findings(state, manifest_dict or {}, domain)
     findings = _sort_findings(findings)
 
     overall_status = _derive_overall_status(findings, state)
@@ -41,28 +63,30 @@ def build_insight_payload(
     )
 
 
-def _collect_findings(state: RepairState, manifest_dict: dict) -> list[InsightFinding]:
+def _collect_findings(state: RepairState, manifest_dict: dict, domain: str) -> list[InsightFinding]:
     found: list[InsightFinding] = []
 
-    # QA
+    # QA — generic vocabulary (open gates by priority), applies to any domain
     found.extend(qa_findings.critical_qa_open(state))
     found.extend(qa_findings.high_qa_open_by_category(state))
     found.extend(qa_findings.medium_qa_open(state))
 
-    # Workflow
+    # Workflow — generic vocabulary (blockers, blocked phases), any domain
     found.extend(workflow_findings.critical_blockers_open(state))
     found.extend(workflow_findings.repair_cannot_advance(state))
     found.extend(workflow_findings.blocked_phases(state))
 
-    # Material
-    found.extend(material_findings.uhss_detected(state))
-    found.extend(material_findings.joining_verification_required(state))
-    found.extend(material_findings.hss_detected(state))
+    # Domain-specific rule modules (material/compliance concerns) — opt-in
+    # per domain so a new domain doesn't inherit collision-repair findings.
+    if material_findings in DOMAIN_RULE_MODULES.get(domain, ()):
+        found.extend(material_findings.uhss_detected(state))
+        found.extend(material_findings.joining_verification_required(state))
+        found.extend(material_findings.hss_detected(state))
 
-    # Compliance
-    found.extend(compliance_findings.corrosion_protection_blocked(state))
-    found.extend(compliance_findings.corrosion_qa_open(state))
-    found.extend(compliance_findings.calibration_assessment(state))
+    if compliance_findings in DOMAIN_RULE_MODULES.get(domain, ()):
+        found.extend(compliance_findings.corrosion_protection_blocked(state))
+        found.extend(compliance_findings.corrosion_qa_open(state))
+        found.extend(compliance_findings.calibration_assessment(state))
 
     # Intake
     if manifest_dict:

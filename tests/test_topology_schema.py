@@ -39,36 +39,73 @@ def test_valid_repair_zone():
     assert zone.structural_tier == "outer_skin"
 
 
-def test_invalid_zone_type_raises():
+def test_zone_type_outside_collision_vocabulary_is_accepted():
+    # RepairZone accepts any non-empty zone_type — ALLOWED_ZONE_TYPES documents
+    # collision repair's vocabulary but is not a closed validation set, so a
+    # domain-specific ZoneClassifier (topology/builder.py) can produce values
+    # outside it. See docs/ARCHITECTURE_DERISK.md.
+    zone = RepairZone(
+        zone_id="test",
+        label="Test",
+        zone_type="bumper",
+        vehicle_section="rear",
+        structural_tier="outer_skin",
+    )
+    assert zone.zone_type == "bumper"
+
+
+def test_vehicle_section_outside_collision_vocabulary_is_accepted():
+    zone = RepairZone(
+        zone_id="test",
+        label="Test",
+        zone_type="outer_panel",
+        vehicle_section="top",
+        structural_tier="outer_skin",
+    )
+    assert zone.vehicle_section == "top"
+
+
+def test_structural_tier_outside_collision_vocabulary_is_accepted():
+    zone = RepairZone(
+        zone_id="test",
+        label="Test",
+        zone_type="outer_panel",
+        vehicle_section="rear",
+        structural_tier="foundation",
+    )
+    assert zone.structural_tier == "foundation"
+
+
+def test_empty_zone_type_raises():
     with pytest.raises(ValueError, match="zone_type"):
         RepairZone(
             zone_id="test",
             label="Test",
-            zone_type="bumper",
+            zone_type="",
             vehicle_section="rear",
             structural_tier="outer_skin",
         )
 
 
-def test_invalid_vehicle_section_raises():
+def test_empty_vehicle_section_raises():
     with pytest.raises(ValueError, match="vehicle_section"):
         RepairZone(
             zone_id="test",
             label="Test",
             zone_type="outer_panel",
-            vehicle_section="top",
+            vehicle_section="   ",
             structural_tier="outer_skin",
         )
 
 
-def test_invalid_structural_tier_raises():
+def test_empty_structural_tier_raises():
     with pytest.raises(ValueError, match="structural_tier"):
         RepairZone(
             zone_id="test",
             label="Test",
             zone_type="outer_panel",
             vehicle_section="rear",
-            structural_tier="foundation",
+            structural_tier="",
         )
 
 

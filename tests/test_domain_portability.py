@@ -174,28 +174,101 @@ class TestEventEnginePortability:
 
 
 # ---------------------------------------------------------------------------
-# Documented coupling: insights engine is NOT yet domain-gated
+# Fixed coupling: insights engine is now domain-gated
 # ---------------------------------------------------------------------------
+#
+# Originally documented here as a coupling finding (docs/ARCHITECTURE_DERISK.md
+# finding #1): build_insight_payload ran collision-specific rule modules
+# (material/compliance) unconditionally regardless of domain, producing a
+# false-positive 'no calibration identified' finding on aviation data where
+# calibration has no meaning. Fixed via insights/engine.py's
+# DOMAIN_RULE_MODULES gating. These tests now pin the fix down as a
+# regression trap — if domain gating breaks, these fail.
 
-class TestKnownCouplingInsightsEngine:
-    """These tests document current behavior, not desired behavior — see
-    docs/ARCHITECTURE_DERISK.md 'Findings' section. build_insight_payload
-    runs collision-specific rule modules (material/compliance) unconditionally
-    regardless of domain_context.domain. It does not crash on aviation data
-    (rules check for absent fields and simply find nothing) except for one
-    always-fires rule that produces a collision-flavored false positive.
-    """
-
-    def test_insights_engine_does_not_crash_on_aviation_state(self, aviation_state):
+class TestInsightsEngineIsDomainGated:
+    def test_does_not_crash_on_aviation_state(self, aviation_state):
         from repairgraph.insights.engine import build_insight_payload
-        payload = build_insight_payload(aviation_state)
+        payload = build_insight_payload(aviation_state, domain="aviation_maintenance")
         assert payload is not None
 
-    def test_insights_engine_produces_collision_flavored_false_positive(self, aviation_state):
+    def test_collision_false_positive_is_gone_when_domain_is_correct(self, aviation_state):
         from repairgraph.insights.engine import build_insight_payload
-        payload = build_insight_payload(aviation_state)
+        payload = build_insight_payload(aviation_state, domain="aviation_maintenance")
         finding_ids = {f.finding_id for f in payload.findings}
         # 'calibration' has no meaning for a landing gear task card; this
-        # fires because compliance_findings always checks for a calibration
-        # QA gate category with no domain gate. Documented, not desired.
+        # must not fire when the aviation domain is correctly passed through.
+        assert "compliance_calibration_not_identified" not in finding_ids
+        assert not any(f.category in ("material", "compliance") for f in payload.findings)
+
+    def test_generic_findings_still_fire_for_aviation(self, aviation_state):
+        # QA/workflow/milestone findings are domain-neutral and must still
+        # surface — gating removes collision-specific findings, not all of them.
+        from repairgraph.insights.engine import build_insight_payload
+        payload = build_insight_payload(aviation_state, domain="aviation_maintenance")
+        finding_ids = {f.finding_id for f in payload.findings}
+        assert "qa_critical_open_qa:airworthiness:critical:1" in finding_ids
+
+    def test_default_domain_preserves_collision_behavior(self, aviation_state):
+        # Backward compatibility: existing collision callers that don't pass
+        # domain= still get collision-specific rules by default.
+        from repairgraph.insights.engine import build_insight_payload
+        payload = build_insight_payload(aviation_state)  # no domain= passed
+        finding_ids = {f.finding_id for f in payload.findings}
         assert "compliance_calibration_not_identified" in finding_ids
+
+    def test_compiled_model_passes_domain_through_automatically(
+        self, aviation_state, aviation_adapter
+    ):
+        # End-to-end: compile_from_state threads domain_context.domain into
+        # build_insight_payload without the caller doing anything extra.
+        model = RepairGraphCompiler().compile_from_state(
+            state=aviation_state, topology=None, adapter=aviation_adapter,
+        )
+        finding_ids = {f.finding_id for f in model.insights.findings}
+        assert "compliance_calibration_not_identified" not in finding_ids
+
+
+# ---------------------------------------------------------------------------
+# Fixed coupling: topology zone classification is now pluggable
+# ---------------------------------------------------------------------------
+#
+# Originally documented as finding #2: topology/builder.py's zone classifier
+# was hardcoded collision vocabulary (pillar/rail/sill/stiffener), and
+# RepairZone validated zone_type/vehicle_section/structural_tier against
+# closed collision-only enums, so even a custom classifier's output would be
+# rejected. Fixed by making build_topology_graph accept a ZoneClassifier and
+# relaxing RepairZone's validation to non-empty strings rather than a closed
+# set (topology/schema.py).
+
+class TestTopologyZoneClassificationIsPluggable:
+    def test_custom_classifier_produces_non_collision_zone_types(self):
+        from repairgraph.topology.builder import build_topology_graph
+
+        def aviation_zone_classifier(zone_id: str) -> tuple[str, str, str]:
+            name = zone_id.lower()
+            zone_type = "landing_gear" if "gear" in name else "unknown"
+            return zone_type, "main", "primary_structure"
+
+        procedure = {
+            "oem": "Airbus", "year": 0, "model": "A320-200", "operation": "gear_inspection",
+            "spatial_relationships": [
+                {"source": "main_gear_strut", "relationship": "adjacent_to", "target": "main_gear_axle"}
+            ],
+            "dependencies": [], "sectioning_locations": [],
+        }
+        topology = build_topology_graph(procedure, zone_classifier=aviation_zone_classifier)
+
+        zone_types = {z.zone_type for z in topology.zones}
+        assert zone_types == {"landing_gear"}
+
+    def test_default_classifier_unchanged_for_collision_data(self):
+        from repairgraph.topology.builder import (
+            _classify_zone,
+            collision_zone_classifier,
+        )
+        assert _classify_zone("rear_pillar_gutter") == collision_zone_classifier(
+            "rear_pillar_gutter"
+        )
+        assert collision_zone_classifier("rear_pillar_gutter") == (
+            "gutter", "rear", "inner_structure",
+        )

@@ -97,7 +97,7 @@ class RepairGraphCompiler:
         evidence = self._build_evidence(state)
         workflow = self._build_workflow_summary(state)
         replay = self._build_replay_summary(state, initial_state, events)
-        insights = build_insight_payload(state)
+        insights = build_insight_payload(state, domain=domain_context.domain)
         exports = ExportLinks(links=export_links or {})
 
         return OperationalModel(

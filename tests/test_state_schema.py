@@ -26,6 +26,23 @@ def test_create_repair_session():
     assert session.status == "not_started"
 
 
+def test_repair_session_domain_neutral_accessors():
+    # oem/year/model/operation are collision vocabulary kept for backward
+    # compatibility (docs/ARCHITECTURE_DERISK.md finding #3); domain-neutral
+    # consumers should read these instead.
+    session = RepairSession(
+        session_id="session_001",
+        oem="Airbus",
+        year=0,
+        model="N12345",
+        operation="tc_32_11_04",
+        status="not_started",
+    )
+    assert session.primary_context == "Airbus" == session.oem
+    assert session.secondary_context == "N12345" == session.model
+    assert session.context_label == "tc_32_11_04" == session.operation
+
+
 def test_invalid_repair_session_status_rejected():
     with pytest.raises(ValueError, match="Invalid session status"):
         RepairSession(

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Callable
 
 from repairgraph.evidence import build_evidence
 from repairgraph.inference.sequencing import build_operation_sequence
@@ -11,6 +12,16 @@ from repairgraph.topology.schema import (
     TopologyGraph,
     ZoneRelationship,
 )
+
+# A zone classifier maps a canonical zone_id to (zone_type, vehicle_section,
+# structural_tier). This is deliberately a swappable function, not a
+# hardcoded pattern match — collision_zone_classifier below encodes
+# collision-repair body-panel vocabulary (pillar/rail/sill/stiffener) and is
+# meaningless for other domains' zone identities (e.g. aviation task cards).
+# A future domain needing spatial topology supplies its own classifier
+# rather than being forced through collision vocabulary. See
+# docs/ARCHITECTURE_DERISK.md.
+ZoneClassifier = Callable[[str], tuple[str, str, str]]
 
 _TIER_BY_ZONE_TYPE = {
     "outer_panel": "outer_skin",
@@ -39,8 +50,15 @@ _GROUP_TYPE_BY_KEYWORD = {
 }
 
 
-def _classify_zone(zone_id: str) -> tuple[str, str, str]:
-    """Return (zone_type, vehicle_section, structural_tier) for a canonical zone_id."""
+def collision_zone_classifier(zone_id: str) -> tuple[str, str, str]:
+    """Collision-repair zone classifier: (zone_type, vehicle_section, structural_tier).
+
+    Pattern-matches collision body-panel vocabulary (pillar/rail/sill/
+    stiffener/wheel_arch/...). This is the default classifier — passed
+    explicitly by build_topology_graph's default parameter — kept as its
+    own named function so a non-collision caller can supply a different
+    ZoneClassifier instead of inheriting this vocabulary.
+    """
     name = zone_id.lower()
 
     # Check specific composite terms before generic structural terms
@@ -89,6 +107,12 @@ def _classify_zone(zone_id: str) -> tuple[str, str, str]:
     return zone_type, vehicle_section, structural_tier
 
 
+# Backward-compatible alias — existing callers/tests import _classify_zone
+# directly. New code should use collision_zone_classifier by name, or supply
+# a different ZoneClassifier to build_topology_graph for other domains.
+_classify_zone = collision_zone_classifier
+
+
 def _collect_zone_ids(procedure: dict, structure: dict | None) -> set[str]:
     zone_ids: set[str] = set()
 
@@ -110,7 +134,11 @@ def _collect_zone_ids(procedure: dict, structure: dict | None) -> set[str]:
     return zone_ids
 
 
-def _build_zones(procedure: dict, structure: dict | None) -> list[RepairZone]:
+def _build_zones(
+    procedure: dict,
+    structure: dict | None,
+    zone_classifier: ZoneClassifier,
+) -> list[RepairZone]:
     zone_ids = _collect_zone_ids(procedure, structure)
 
     material_map: dict[str, dict] = {}
@@ -120,7 +148,7 @@ def _build_zones(procedure: dict, structure: dict | None) -> list[RepairZone]:
 
     zones = []
     for zid in sorted(zone_ids):
-        zone_type, vehicle_section, structural_tier = _classify_zone(zid)
+        zone_type, vehicle_section, structural_tier = zone_classifier(zid)
         mat = material_map.get(zid)
 
         zones.append(RepairZone(
@@ -275,7 +303,11 @@ def _build_operation_regions(
     return regions
 
 
-def build_topology_graph(procedure: dict, structure: dict | None = None) -> TopologyGraph:
+def build_topology_graph(
+    procedure: dict,
+    structure: dict | None = None,
+    zone_classifier: ZoneClassifier = collision_zone_classifier,
+) -> TopologyGraph:
     """
     Build a spatial topology graph from a normalized procedure and optional structure.
 
@@ -283,9 +315,15 @@ def build_topology_graph(procedure: dict, structure: dict | None = None) -> Topo
     structure_nodes, and material components. Structural groups are inferred from shared
     naming prefixes. Operation stages and regions map the repair sequence to spatial context.
 
+    zone_classifier maps a zone_id to (zone_type, vehicle_section, structural_tier).
+    Defaults to collision_zone_classifier for backward compatibility. A domain
+    whose zone identities don't follow collision body-panel vocabulary (e.g.
+    aircraft structural zones) should supply its own ZoneClassifier rather
+    than have every zone classify as "unknown" under collision patterns.
+
     All outputs are advisory and require OEM verification.
     """
-    zones = _build_zones(procedure, structure)
+    zones = _build_zones(procedure, structure, zone_classifier)
     zone_relationships = _build_zone_relationships(procedure)
     structural_groups = _infer_structural_groups(zones)
     operation_stages = _build_operation_stages(procedure)

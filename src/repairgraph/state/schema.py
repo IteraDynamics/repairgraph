@@ -20,6 +20,17 @@ def _validate(value: str, allowed: set[str], label: str) -> None:
 
 @dataclass(slots=True)
 class RepairSession:
+    """A tracked unit of work: a collision repair, an aviation task card, an
+    industrial service order, etc.
+
+    Field names (oem/year/model/operation) are collision-repair vocabulary,
+    kept as-is for backward compatibility with existing call sites rather
+    than renamed — see docs/ARCHITECTURE_DERISK.md finding #3. New,
+    domain-neutral code (adapters, cross-domain consumers) should prefer the
+    primary_context/secondary_context/context_label properties below over
+    reading oem/year/model/operation directly, since those names assume
+    every domain has an OEM and a vehicle model.
+    """
     session_id: str
     oem: str
     year: int
@@ -32,6 +43,27 @@ class RepairSession:
 
     def __post_init__(self) -> None:
         _validate(self.status, SESSION_STATUSES, "session status")
+
+    @property
+    def primary_context(self) -> str:
+        """Domain-neutral alias for the session's primary identifying
+        context: OEM in collision repair, aircraft type in aviation
+        maintenance, equipment manufacturer in industrial service, etc."""
+        return self.oem
+
+    @property
+    def secondary_context(self) -> str:
+        """Domain-neutral alias for the secondary identifying context:
+        vehicle model in collision repair, registration/tail number in
+        aviation maintenance, equipment model in industrial service, etc."""
+        return self.model
+
+    @property
+    def context_label(self) -> str:
+        """Domain-neutral alias for the work item being tracked: operation
+        in collision repair, task card ID in aviation maintenance, work
+        order ID in industrial service, etc."""
+        return self.operation
 
 
 @dataclass(slots=True)

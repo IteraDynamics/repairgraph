@@ -1,5 +1,12 @@
 from dataclasses import dataclass, field
 
+# Reference vocabulary produced by collision_zone_classifier (topology/builder.py).
+# These are documentation of collision repair's zone taxonomy, not a closed
+# validation set — RepairZone accepts any classifier's output (see
+# __post_init__ below and docs/ARCHITECTURE_DERISK.md). A domain-specific
+# ZoneClassifier is free to produce zone_type/vehicle_section/structural_tier
+# values outside these sets; "unknown" remains the shared fallback meaning
+# "classifier could not determine this."
 ALLOWED_ZONE_TYPES = {
     "outer_panel",
     "inner_panel",
@@ -56,12 +63,18 @@ class RepairZone:
     tensile_strength_mpa: int | None = None
 
     def __post_init__(self):
-        if self.zone_type not in ALLOWED_ZONE_TYPES:
-            raise ValueError(f"Invalid zone_type: {self.zone_type!r}")
-        if self.vehicle_section not in ALLOWED_VEHICLE_SECTIONS:
-            raise ValueError(f"Invalid vehicle_section: {self.vehicle_section!r}")
-        if self.structural_tier not in ALLOWED_STRUCTURAL_TIERS:
-            raise ValueError(f"Invalid structural_tier: {self.structural_tier!r}")
+        # Basic sanity check only — non-empty strings — not closed-set
+        # validation. A pluggable ZoneClassifier (topology/builder.py) may
+        # legitimately produce zone_type/vehicle_section/structural_tier
+        # values outside ALLOWED_ZONE_TYPES etc.; those sets document
+        # collision repair's vocabulary, they don't gate other domains'.
+        for field_name, value in (
+            ("zone_type", self.zone_type),
+            ("vehicle_section", self.vehicle_section),
+            ("structural_tier", self.structural_tier),
+        ):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field_name} must be a non-empty string, got {value!r}")
 
 
 @dataclass
