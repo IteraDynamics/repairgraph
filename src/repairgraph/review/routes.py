@@ -119,9 +119,11 @@ def _manifest_overrides_from_procedure(procedure: dict) -> dict[str, Any]:
             "filenames": filenames,
             "readiness": src.get("readiness", "partial"),
         }
+    label = f"{procedure.get('year','')} {procedure.get('oem','')} {procedure.get('model','')}".strip()
+    op_label = str(procedure.get("operation", "")).replace("_", " ").title()
     return {
         "source_count": 1,
-        "filenames": ["repair_procedure_quarter_panel.json"],
+        "filenames": [f"{label} — {op_label} (OEM Reference)".strip(" —")],
         "readiness": "ready",
     }
 
@@ -201,22 +203,61 @@ def _build_demo_model():
     return RepairGraphCompiler().compile_demo(adapter=adapter)
 
 
+def _build_model_with_context(
+    oem: str | None = None,
+    year: int | None = None,
+    model: str | None = None,
+    operation: str | None = None,
+):
+    """Build an OperationalModel, resolving vehicle from params → active → demo.
+
+    Returns (model, demo_notice). demo_notice is None when a real vehicle
+    was resolved and compiled. It is a dict describing *why* the demo is
+    being shown whenever the demo fixture is used — the review page must
+    never silently show Honda Accord data in place of a real request
+    without saying so; a shop evaluating this tool with their own upload
+    would otherwise see unrelated results with no explanation.
+    """
+    vehicle = _resolve_vehicle(oem, year, model, operation)
+
+    if vehicle is not None:
+        v_oem, v_year, v_model, v_op = vehicle
+        result = _build_model_for_vehicle(v_oem, v_year, v_model, v_op)
+        if result is not None:
+            return result, None
+
+        # A vehicle was resolved (explicit params or an active vehicle set
+        # by intake) but no normalized procedure exists on disk for it —
+        # e.g. the active vehicle file references a procedure that was
+        # never fully written, or someone linked to a vehicle that was
+        # never uploaded. Falling through to demo without saying so would
+        # look like a bug or, worse, look like fabricated results.
+        return _build_demo_model(), {
+            "reason": "requested_vehicle_not_found",
+            "requested": {"oem": v_oem, "year": v_year, "model": v_model},
+        }
+
+    # No explicit params and no active vehicle at all — the ordinary
+    # first-visit state before anyone has uploaded anything. Still worth
+    # saying explicitly, so it never reads as "this is your data."
+    return _build_demo_model(), {"reason": "no_vehicle_uploaded_yet", "requested": None}
+
+
 def _build_model(
     oem: str | None = None,
     year: int | None = None,
     model: str | None = None,
     operation: str | None = None,
 ):
-    """Build an OperationalModel, resolving vehicle from params → active → demo."""
-    vehicle = _resolve_vehicle(oem, year, model, operation)
-    if vehicle is not None:
-        v_oem, v_year, v_model, v_op = vehicle
-        result = _build_model_for_vehicle(v_oem, v_year, v_model, v_op)
-        if result is not None:
-            return result
-        # Procedure not found on disk — fall through to demo
+    """Build an OperationalModel, resolving vehicle from params → active → demo.
 
-    return _build_demo_model()
+    Convenience wrapper over _build_model_with_context for callers that only
+    need the model (JSON sub-endpoints, where the demo fallback is less
+    likely to mislead since the caller is presumably a developer/integration,
+    not someone reading a rendered page cold).
+    """
+    model_obj, _demo_notice = _build_model_with_context(oem, year, model, operation)
+    return model_obj
 
 
 # ---------------------------------------------------------------------------
@@ -245,10 +286,15 @@ def get_review(
       - What evidence supports those conclusions?
 
     Vehicle is resolved from query params → active vehicle → Honda Accord demo.
+    If the demo is shown because no real vehicle could be resolved, the page
+    displays a clearly visible notice explaining why — it never silently
+    presents demo data as if it were the requested vehicle's data.
     Consumes OperationalModel via RepairGraphCompiler. Vanilla HTML/CSS/JS only.
     No CDN. No external JS. No frameworks.
     """
-    operational_model = _build_model(oem=oem, year=year, model=model, operation=operation)
+    operational_model, demo_notice = _build_model_with_context(
+        oem=oem, year=year, model=model, operation=operation
+    )
     rca = build_root_cause_analysis(operational_model)
     payload = build_review_payload(operational_model)
     plan = build_operational_plan(operational_model, rca=rca)
@@ -259,6 +305,7 @@ def get_review(
         payload,
         narrative=narrative.to_dict(),
         work_package=work_pkg.to_dict(),
+        demo_notice=demo_notice,
     )
     return HTMLResponse(content=html, status_code=200)
 

@@ -168,6 +168,44 @@ def _severity_colors(severity: str) -> dict[str, str]:
 
 
 # ---------------------------------------------------------------------------
+# Demo notice — shown whenever the page is displaying the built-in demo
+# fixture instead of a resolved real vehicle, so it never looks like the
+# viewer's own data.
+# ---------------------------------------------------------------------------
+
+def _render_demo_notice(demo_notice: dict[str, Any] | None) -> str:
+    if not demo_notice:
+        return ""
+
+    reason = demo_notice.get("reason")
+    requested = demo_notice.get("requested")
+
+    if reason == "requested_vehicle_not_found" and requested:
+        vehicle_label = f"{requested.get('year','')} {requested.get('oem','')} {requested.get('model','')}".strip()
+        headline = f"No saved procedure found for {_esc(vehicle_label)}"
+        detail = (
+            "Showing the built-in demo (2025 Honda Accord) instead. "
+            "This is not the vehicle you requested — upload its OEM documents "
+            'through <a href="/internal/intake">Intake</a> to see its own review.'
+        )
+        style = "rr-demo-notice rr-demo-notice-warn"
+    else:
+        headline = "Viewing the built-in demo"
+        detail = (
+            "This is a sample repair (2025 Honda Accord), not data you uploaded. "
+            'Upload your own OEM documents through <a href="/internal/intake">Intake</a> '
+            "to see your vehicle here."
+        )
+        style = "rr-demo-notice"
+
+    return f"""
+<div class="{style}">
+  <strong>{headline}</strong>
+  <span>{detail}</span>
+</div>"""
+
+
+# ---------------------------------------------------------------------------
 # Section renderers
 # ---------------------------------------------------------------------------
 
@@ -1178,6 +1216,7 @@ def build_review_page_html(
     narrative: dict[str, Any] | None = None,
     operational_plan: dict[str, Any] | None = None,
     work_package: dict[str, Any] | None = None,
+    demo_notice: dict[str, Any] | None = None,
 ) -> str:
     """Return a self-contained HTML page for the Review Repair experience.
 
@@ -1185,6 +1224,13 @@ def build_review_page_html(
       1. work_package (CollisionWorkPackage) — richest, preferred
       2. narrative (OperationalNarrative) — used when no work_package
       3. operational_plan (raw plan dict) — backward compat only
+
+    demo_notice, when provided, renders a visible banner above everything
+    else explaining that the page is showing the built-in demo fixture
+    rather than a resolved real vehicle — see _render_demo_notice. This
+    must never be silently omitted: a viewer evaluating this tool with
+    their own upload must be told plainly when what they're looking at
+    isn't their data.
     """
     _narrative = narrative or {}
     _wp = work_package or {}
@@ -1267,9 +1313,15 @@ def build_review_page_html(
 .rr-wp-blocked .rr-wp-icon{{color:#ef4444}}
 .rr-wp-status-badge{{display:inline-block;font-size:.75rem;font-weight:600;padding:.2rem .6rem;border-radius:4px;background:#fee2e2;color:#991b1b}}
 .rr-wp-urgency{{display:inline-block;font-size:.75rem;font-weight:600;padding:.2rem .6rem;border-radius:4px;background:#fef3c7;color:#92400e;margin-left:.25rem}}
+.rr-demo-notice{{display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem;background:#eff6ff;border-bottom:3px solid #3b82f6;color:#1e3a5f;padding:.85rem 1.5rem;font-size:.92rem}}
+.rr-demo-notice strong{{font-size:.95rem}}
+.rr-demo-notice a{{color:#1d4ed8;font-weight:600}}
+.rr-demo-notice-warn{{background:#fffbeb;border-bottom-color:#d97706;color:#78350f}}
+.rr-demo-notice-warn a{{color:#b45309}}
 </style>
 </head>
 <body>
+{_render_demo_notice(demo_notice)}
 <div class="rr-page">
   {_render_page_header(h, er)}
   {nav_html}

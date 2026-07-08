@@ -5,6 +5,23 @@ from repairgraph.insights.schema import InsightFinding
 from repairgraph.state.schema import RepairState
 
 
+def _humanize_block_target(target: str) -> str:
+    """Render an internal 'blocks' token ('session_completion', 'phase:4')
+    as readable prose ('session completion', 'Phase 4') for finding text
+    that a shop reader sees directly on the review page. supporting_evidence
+    keeps the raw token — this only affects human-facing explanation text.
+    """
+    if target.startswith("phase:"):
+        return f"Phase {target.split(':', 1)[1]}"
+    return target.replace("_", " ")
+
+
+def _humanize_blocks_list(blocks: list[str]) -> str:
+    if not blocks:
+        return "repair completion"
+    return ", ".join(_humanize_block_target(b) for b in blocks)
+
+
 def blocked_phases(state: RepairState) -> list[InsightFinding]:
     findings = []
     for phase in state.phases:
@@ -37,14 +54,15 @@ def critical_blockers_open(state: RepairState) -> list[InsightFinding]:
     findings = []
     for blocker in state.blockers:
         if blocker.severity == "critical" and blocker.status == "open":
-            blocks_str = ", ".join(blocker.blocks) if blocker.blocks else "repair completion"
+            blocks_display = _humanize_blocks_list(blocker.blocks)
+            raw_blocks_str = ", ".join(blocker.blocks) if blocker.blocks else "repair completion"
             findings.append(InsightFinding(
                 finding_id=f"workflow_critical_blocker_{blocker.blocker_id}",
                 severity="critical",
                 category="workflow",
                 title=f"Critical blocker active: {blocker.type.replace('_', ' ')}",
                 explanation=(
-                    f"A critical {blocker.type.replace('_', ' ')} blocker is preventing progress on: {blocks_str}. "
+                    f"A critical {blocker.type.replace('_', ' ')} blocker is preventing progress on: {blocks_display}. "
                     + (blocker.reason or "")
                 ),
                 recommended_action=(
@@ -54,7 +72,7 @@ def critical_blockers_open(state: RepairState) -> list[InsightFinding]:
                 supporting_evidence=(
                     f"blocker_id={blocker.blocker_id}",
                     f"type={blocker.type}",
-                    f"blocks={blocks_str}",
+                    f"blocks={raw_blocks_str}",
                     *[f"zone={z}" for z in blocker.related_zones],
                 ),
                 confidence="high",

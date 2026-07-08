@@ -14,6 +14,7 @@ from fastapi import FastAPI
 
 from repairgraph.api.demo_routes import router as demo_router
 from repairgraph.api.fleet_routes import router as fleet_router
+from repairgraph.api.home_routes import router as home_router
 from repairgraph.api.intake_routes import router as intake_router
 from repairgraph.api.state_routes import router as state_router
 from repairgraph.review.routes import router as review_router
@@ -29,6 +30,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.include_router(home_router)
 app.include_router(review_router)
 app.include_router(fleet_router)
 app.include_router(demo_router)

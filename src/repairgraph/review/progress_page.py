@@ -88,6 +88,14 @@ def _esc(s: Any) -> str:
     return html.escape(str(s), quote=True)
 
 
+def _humanize_status(status: str) -> str:
+    """Render a raw status enum ('not_started', 'qa_gate_passed', ...) as
+    Title Case for display. The CSS class stays the raw value for styling
+    hooks — only the visible text changes, so a shop evaluator never reads
+    an underscored internal enum as if it were product copy."""
+    return status.replace("_", " ").title()
+
+
 def _js_arg(s: str) -> str:
     """Serialize a string as a JS literal safe inside a double-quoted HTML
     attribute: JSON double quotes are entity-escaped so the attribute does
@@ -112,7 +120,7 @@ def _gate_card(g: dict[str, Any]) -> str:
         f'<div class="card"><div class="row">'
         f'<div><strong>{_esc(g.get("check") or gid)}</strong>'
         f'<div class="meta">{_esc(g.get("category",""))} · {_esc(g.get("priority",""))} priority{blocking}</div></div>'
-        f'<div class="controls"><span class="badge {_esc(g["status"])}">{_esc(g["status"])}</span>{controls}</div>'
+        f'<div class="controls"><span class="badge {_esc(g["status"])}">{_esc(_humanize_status(g["status"]))}</span>{controls}</div>'
         f'</div></div>'
     )
 
@@ -135,7 +143,7 @@ def _action_card(a: dict[str, Any]) -> str:
         f'<div class="card"><div class="row">'
         f'<div><strong>{_esc(label)}</strong>'
         f'<div class="meta">phase {_esc(a.get("phase",""))} · {_esc(a.get("action_type",""))}</div></div>'
-        f'<div class="controls"><span class="badge {_esc(a["status"])}">{_esc(a["status"])}</span>{controls}</div>'
+        f'<div class="controls"><span class="badge {_esc(a["status"])}">{_esc(_humanize_status(a["status"]))}</span>{controls}</div>'
         f'</div></div>'
     )
 
@@ -163,7 +171,7 @@ def build_progress_page_html(summary: dict[str, Any]) -> str:
     )
 
     phases_html = " ".join(
-        f'<span class="badge {_esc(p["status"])}">{_esc(p["label"] or p["name"])}</span>'
+        f'<span class="badge {_esc(p["status"])}">{_esc(p["label"] or p["name"])} — {_esc(_humanize_status(p["status"]))}</span>'
         for p in summary.get("phases", [])
     )
 
@@ -179,7 +187,7 @@ def build_progress_page_html(summary: dict[str, Any]) -> str:
 <div class="topbar">
   <div>
     <h1>{_esc(title)}</h1>
-    <div class="sub">Session <span class="badge {_esc(session["status"])}">{_esc(session["status"])}</span>
+    <div class="sub">Session <span class="badge {_esc(session["status"])}">{_esc(_humanize_status(session["status"]))}</span>
       · {counts["events_recorded"]} events recorded
       · <a href="/internal/review{'' if not summary.get('_qs') else _esc(summary['_qs'])}">Open Repair Review</a></div>
   </div>
