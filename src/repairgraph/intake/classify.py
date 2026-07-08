@@ -52,7 +52,8 @@ _OEM_PATTERNS: dict[str, list[str]] = {
     "BMW": [r"\bbmw\b", r"\bmini cooper\b"],
     "Mercedes": [r"\bmercedes\b", r"\bmercedes-benz\b", r"\bmbz\b"],
     "Stellantis": [r"\bstellantis\b", r"\bchrysler\b", r"\bdodge\b", r"\bjeep\b", r"\bram\b"],
-    "Hyundai": [r"\bhyundai\b", r"\bkia\b", r"\bgenesis\b"],
+    "Hyundai": [r"\bhyundai\b", r"\bgenesis\b"],
+    "Kia": [r"\bkia\b"],
     "Mazda": [r"\bmazda\b"],
     "Mitsubishi": [r"\bmitsubishi\b"],
     "Volvo": [r"\bvolvo\b"],
@@ -96,6 +97,11 @@ _MODEL_PATTERNS: dict[str, list[str]] = {
     "Hyundai": [
         r"\bsonata\b", r"\belantra\b", r"\btucson\b", r"\bsanta fe\b",
         r"\bpalisade\b", r"\bkona\b", r"\bioniq\b", r"\bveloster\b",
+    ],
+    "Kia": [
+        r"\bsportage\b", r"\bsorento\b", r"\btelluride\b", r"\bforte\b",
+        r"\boptima\b", r"\bk5\b", r"\bsoul\b", r"\bniro\b", r"\bseltos\b",
+        r"\brio\b", r"\bstinger\b", r"\bcarnival\b",
     ],
     "BMW": [
         r"\b3 series\b", r"\b5 series\b", r"\b7 series\b", r"\bx3\b", r"\bx5\b",
@@ -179,6 +185,13 @@ _MODEL_CANONICAL: dict[str, dict[str, str]] = {
         r"\bsonata\b": "Sonata", r"\belantra\b": "Elantra", r"\btucson\b": "Tucson",
         r"\bsanta fe\b": "Santa Fe", r"\bpalisade\b": "Palisade",
         r"\bkona\b": "Kona", r"\bioniq\b": "Ioniq", r"\bveloster\b": "Veloster",
+    },
+    "Kia": {
+        r"\bsportage\b": "Sportage", r"\bsorento\b": "Sorento",
+        r"\btelluride\b": "Telluride", r"\bforte\b": "Forte",
+        r"\boptima\b": "Optima", r"\bk5\b": "K5", r"\bsoul\b": "Soul",
+        r"\bniro\b": "Niro", r"\bseltos\b": "Seltos", r"\brio\b": "Rio",
+        r"\bstinger\b": "Stinger", r"\bcarnival\b": "Carnival",
     },
     "BMW": {
         r"\b3 series\b": "3 Series", r"\b5 series\b": "5 Series",

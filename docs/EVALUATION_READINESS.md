@@ -83,23 +83,41 @@ Three concrete leaks found and fixed:
 
 Tests: `tests/test_surface_language.py`.
 
-## Known gap found during evaluation, not fixed here
+## 5. Fixed: Kia was misdetected as Hyundai
 
-Testing the evaluator journey with a **Kia** vehicle surfaced a real
-classifier bug: Kia isn't in the intake classifier's known-OEM vocabulary,
-and the document was misdetected as **Hyundai** with no model — a silent
-wrong-brand misclassification, not a graceful "unknown." This is a
-classifier-accuracy gap (`intake/classify.py`'s OEM pattern list), separate
-from the four trust/UX issues this pass addressed. Worth fixing before an
-evaluator who works on Kia, Mazda, or other brands outside the current
-pattern list tries this — but out of scope here since it's an accuracy
-problem, not a trust/honesty one.
+Testing the evaluator journey with a Kia document surfaced a real
+classifier bug: Kia wasn't in the intake classifier's OEM vocabulary at
+all — it was bucketed under the "Hyundai" pattern group (`_OEM_PATTERNS`
+in `intake/classify.py`, following the same badge-consolidation pattern
+used for Acura→Honda, Lexus→Toyota, Infiniti→Nissan, etc.). Since no Kia
+model names were registered either, a Kia repair document was silently
+mislabeled `detected_oem: "Hyundai"` with `detected_model: null` — not a
+graceful "unknown," an actively wrong brand.
+
+Fixed by giving Kia its own OEM entry and a model vocabulary (Sportage,
+Sorento, Telluride, Forte, Optima, K5, Soul, Niro, Seltos, Rio, Stinger,
+Carnival), matching the structure every other independently-badged brand
+uses. Hyundai and Genesis detection are unchanged — Genesis remains
+bucketed under Hyundai, as it was before.
+
+The same consolidation pattern still exists for other sub-brands (Acura,
+Lexus, Scion, Infiniti, Lincoln, GMC/Buick/Cadillac, Audi/Porsche, Mini,
+Chrysler/Dodge/Jeep/Ram) — none of those were reported as wrong during
+evaluation prep, so they weren't touched here. If an evaluator works with
+one of those brands and gets an unexpected OEM label, the fix is the same
+shape as this one: give it its own `_OEM_PATTERNS` entry and a
+`_MODEL_PATTERNS`/`_MODEL_CANONICAL` list.
+
+Tests: `tests/test_kia_oem_detection.py`.
 
 ## Verification
 
-- Full test suite: 2313 passed, 1 skipped.
+- Full test suite: 2323 passed, 1 skipped.
 - Real browser (Playwright) click-through of the complete evaluator journey:
   home (no active job) → intake upload (Nissan Rogue) → home (shows active
   job) → review (no demo notice, real content) → progress (clearing a QA
   gate moves 8 open → 7) → fleet (shows the job). Zero JavaScript errors
   across the full journey.
+- Kia fix verified end-to-end the same way: upload → `detected_oem: "Kia"`,
+  `detected_model: "Sportage"` → review shows Kia Sportage with no demo
+  notice → fleet dashboard shows the job.
