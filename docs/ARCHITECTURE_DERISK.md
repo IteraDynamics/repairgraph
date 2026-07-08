@@ -9,48 +9,37 @@ data is generic by assertion, not by proof.
 This pass built a second, deliberately different domain — **aviation
 maintenance** (an A320 landing gear 100-hour inspection task card) — and
 pushed it through the *unmodified* compiler, state-projection engine, and
-insights engine, using only their public generic surface. This is a stress
-test, not a second product: there is no aviation review page, no aviation
+insights engine, using only their public generic surface. This was a stress
+test, not a second product: there was no aviation review page, no aviation
 intake pipeline, no aviation fixture data store. The goal was narrowly to
 answer "does the core hold," not to build a second vertical.
 
-**Status: all three coupling findings below have since been fixed** (same
-session, follow-up pass). The "Findings" section is kept in its original
-form — including the original fix directions — with a resolution note added
-to each, since the reasoning for *why* each was a risk is still the useful
-part. `tests/test_domain_portability.py` now asserts the fixed behavior
-directly (e.g. `TestInsightsEngineIsDomainGated`,
-`TestTopologyZoneClassificationIsPluggable`) rather than merely documenting
-the bugs.
+**Status: all three coupling findings below have since been fixed.** The
+"Findings" section is kept in its original form — including the original
+fix directions — with a resolution note added to each, since the reasoning
+for *why* each was a risk is still the useful part.
 
-## What was built
-
-- `src/repairgraph/adapters/aviation.py` — `AviationDomainAdapter`, satisfying
-  the same `DomainAdapter` protocol as `CollisionDomainAdapter`. Task card ID,
-  ATA chapter, aircraft type/registration, airworthiness directives in place
-  of OEM/model/repair-area.
-- `tests/fixtures/aviation_task_card.py` — a `RepairState` built **directly**
-  from the generic dataclasses (`RepairSession`, `PhaseState`, `ActionState`,
-  `QAGateState`, `Blocker`, `ZoneActivation`) with no topology, no procedure
-  JSON, no OEM data. Deliberately bypasses `initialize_repair_state`,
-  `build_operation_sequence`, `generate_qa_checklist`, and
-  `build_topology_graph` — those are collision-coupled helper functions, not
-  core, and using them would have proven nothing about portability (see
-  findings below for why).
-- `tests/test_domain_portability.py` — 17 tests compiling the aviation state
-  through `RepairGraphCompiler.compile_from_state`, replaying progress events
-  through `project_repair_state`, and running `build_insight_payload`
-  against it.
+**The stress-test scaffolding itself was removed after serving its
+purpose** (`adapters/aviation.py`, the aviation `RepairState` fixture, and
+the portability test suite). Collision repair is the only vertical actually
+under development right now; the intent of this pass was strictly to
+validate that the *core* doesn't secretly assume collision data, not to
+begin building a second product. Keeping a named-but-unused aviation adapter
+in the tree would misrepresent that. What remains permanently is the fixed
+code itself (domain-gated insights, pluggable zone classification, generic
+session accessors) — the part that actually reduces risk for whenever a real
+second vertical is brought in, by a domain expert, later. This document
+stays as the historical record of what was tested and why.
 
 ## What holds — proven, not assumed
 
 | Layer | Result |
 | --- | --- |
-| `DomainAdapter` protocol (`core/interfaces.py`) | Genuinely generic. `AviationDomainAdapter` satisfies it with zero protocol changes. |
-| `RepairGraphCompiler.compile_from_state` | Compiles aviation state with **no code changes**. `topology=None` is handled cleanly — spatial topology is optional, not assumed. |
-| `OperationalModel` / `WorkflowSummary` / `AdvisoryNotice` / `ExportLinks` | All populate correctly from aviation data. `to_dict()` is fully JSON-serializable. |
-| State schema (`RepairSession`, `PhaseState`, `ActionState`, `QAGateState`, `Blocker`, `ZoneActivation`) | Represents a task card with no awkwardness — phases/actions/QA-gates/blockers is genuinely domain-neutral vocabulary. |
-| Event engine (`state/events.py`, `state/project.py`, `state/replay.py`) | `qa_gate_passed`, `blocker_resolved`, `action_started/completed` all project correctly on aviation events. State progression (Sprint: state progression) generalizes without modification. |
+| `DomainAdapter` protocol (`core/interfaces.py`) | Genuinely generic. A second adapter satisfied it with zero protocol changes. |
+| `RepairGraphCompiler.compile_from_state` | Compiled aviation state with **no code changes**. `topology=None` is handled cleanly — spatial topology is optional, not assumed. |
+| `OperationalModel` / `WorkflowSummary` / `AdvisoryNotice` / `ExportLinks` | All populated correctly from aviation data. `to_dict()` was fully JSON-serializable. |
+| State schema (`RepairSession`, `PhaseState`, `ActionState`, `QAGateState`, `Blocker`, `ZoneActivation`) | Represented a task card with no awkwardness — phases/actions/QA-gates/blockers is genuinely domain-neutral vocabulary. |
+| Event engine (`state/events.py`, `state/project.py`, `state/replay.py`) | `qa_gate_passed`, `blocker_resolved`, `action_started/completed` all projected correctly on aviation events. State progression generalizes without modification. |
 | Fleet dashboard (`state/fleet.py`) | Not directly tested here (it reads from `data/normalized/`, a collision-specific file layout), but its aggregation logic already only touches `RepairState`, consistent with this test's findings. |
 
 ## What was coupled to collision repair — findings, now fixed
@@ -84,9 +73,9 @@ get correct gating with no code change on their part. Generic rule modules
 (QA gates, workflow blockers, milestones, intake readiness) still run for
 every domain — gating only applies to material/compliance concerns that are
 inherently collision-specific.
-`test_domain_portability.py::TestInsightsEngineIsDomainGated` verifies the
-false positive is gone for aviation, generic findings still fire, and
-collision behavior is unchanged by default.
+Verified with the (since-removed) aviation stress test: the false
+positive was gone once the aviation domain was passed through, generic
+findings still fired, and collision behavior was unchanged by default.
 
 ### 2. `topology/builder.py`'s zone classifier is collision vocabulary, not generic — FIXED
 
@@ -114,10 +103,9 @@ default and as a backward-compatible alias (`_classify_zone =
 collision_zone_classifier`) for existing imports. `RepairZone`'s validation
 was relaxed from closed-set membership to "non-empty string" — the
 `ALLOWED_*` sets in `topology/schema.py` are now documentation of collision
-repair's vocabulary, not a validation gate. `test_domain_portability.py::
-TestTopologyZoneClassificationIsPluggable` verifies a custom classifier
-produces non-collision zone types end-to-end, and collision behavior is
-byte-for-byte unchanged by default.
+repair's vocabulary, not a validation gate. Verified with the (since-removed) aviation stress test: a custom
+classifier produced non-collision zone types end-to-end, and collision
+behavior was byte-for-byte unchanged by default.
 
 ### 3. `RepairSession` fields are named after collision concepts — FIXED
 
@@ -136,11 +124,11 @@ directly — a rename would be pure churn risk for a cosmetic issue),
 `RepairSession` gained three read-only properties: `primary_context`
 (alias for `oem`), `secondary_context` (alias for `model`), `context_label`
 (alias for `operation`). Existing code is completely unaffected — the
-underlying fields, their names, and their values are unchanged.
-`AviationDomainAdapter.from_repair_state` now reads the session through
-these domain-neutral properties instead of reusing `session.oem` to mean
-"aircraft type," resolving the naming leak at the point where it was
-actually felt.
+underlying fields, their names, and their values are unchanged. The
+(since-removed) aviation adapter's `from_repair_state` was updated to read
+the session through these domain-neutral properties instead of reusing
+`session.oem` to mean "aircraft type," resolving the naming leak at the
+point where it was actually felt.
 
 **Why not rename outright**: additive properties get 100% of the risk
 reduction (no domain-adapter author needs to read collision-named fields
@@ -169,12 +157,20 @@ and the event/replay engine are domain-agnostic — **holds**. A second,
 unrelated domain compiles through all of it with zero core code changes.
 
 All three coupling findings are now fixed, each with zero behavior change
-for existing collision-repair callers (verified by the full 2285-test suite
-passing, including every pre-existing collision test unmodified except two
-that pinned the old closed-set topology validation and were updated to
-assert the new, intentionally relaxed contract). The cost of fixing all
-three together was small — a domain-gating table, a classifier parameter
-plus relaxed validation, and three read-only properties — confirming the
-original assessment that fixing this now, with one domain's worth of code
-depending on the current shape, was cheap. Doing this after a second real
-vertical was built on top would not have been.
+for existing collision-repair callers (verified by the full test suite
+passing at the time, including every pre-existing collision test unmodified
+except two that pinned the old closed-set topology validation and were
+updated to assert the new, intentionally relaxed contract). The cost of
+fixing all three together was small — a domain-gating table, a classifier
+parameter plus relaxed validation, and three read-only properties —
+confirming the original assessment that fixing this now, with one domain's
+worth of code depending on the current shape, was cheap. Doing this after a
+second real vertical was built on top would not have been.
+
+To be explicit about scope: this was architecture validation, not the start
+of a second vertical. Collision repair remains the only product under
+development. The point of this exercise was to confirm the core doesn't
+quietly assume collision data — so that whenever a real second domain is
+brought in later, by a domain expert building that vertical properly, it
+inherits a core that was already checked rather than one that's generic in
+name only.
